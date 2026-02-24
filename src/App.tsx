@@ -58,6 +58,14 @@ export default function App() {
     }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,17 +125,20 @@ export default function App() {
         localStorage.setItem('devpulse_token', data.token);
         setToken(data.token);
         setShowLogin(false);
+        setNotification({ message: "Authenticated successfully", type: 'success' });
       } else {
-        alert("Invalid credentials");
+        setNotification({ message: data.error || "Invalid credentials", type: 'error' });
       }
     } catch (error) {
       console.error("Login error:", error);
+      setNotification({ message: "Connection error during login", type: 'error' });
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('devpulse_token');
     setToken(null);
+    setNotification({ message: "Logged out", type: 'success' });
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -154,13 +165,14 @@ export default function App() {
           meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
         });
         fetchData();
-        alert("Content published successfully!");
+        setNotification({ message: "Content published successfully!", type: 'success' });
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to publish content");
+        setNotification({ message: err.error || "Failed to publish content", type: 'error' });
       }
     } catch (error) {
       console.error("Error creating post:", error);
+      setNotification({ message: "Network error: Could not connect to API", type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -215,6 +227,24 @@ export default function App() {
           </div>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {notification && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 20, x: '-50%' }}
+            className={`fixed bottom-8 left-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${
+              notification.type === 'success' 
+                ? 'bg-emerald-500 text-black border-emerald-400' 
+                : 'bg-red-500 text-white border-red-400'
+            }`}
+          >
+            {notification.type === 'success' ? <Activity className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            <span className="font-bold text-sm">{notification.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showLogin && (
