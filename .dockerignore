@@ -1,0 +1,5 @@
+node_modules
+dist
+devpulse.db
+.env
+*.log

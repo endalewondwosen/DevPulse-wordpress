@@ -1,0 +1,5 @@
+{
+  "name": "DevPulse - Headless Content Hub",
+  "description": "A professional developer showcase project demonstrating headless architecture with a simulated WordPress-style REST API and a modern React frontend.",
+  "requestFramePermissions": []
+}
