@@ -12,7 +12,12 @@ import {
   Cpu,
   Lock,
   User,
-  LogOut
+  LogOut,
+  Edit3,
+  Trash2,
+  X,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface Post {
@@ -59,6 +64,7 @@ export default function App() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -91,18 +97,60 @@ export default function App() {
       ]);
       
       const [projData, snipData, statData] = await Promise.all([
-        projRes.json(),
-        snipRes.json(),
-        statRes.json()
+        processResponse(projRes),
+        processResponse(snipRes),
+        processResponse(statRes)
       ]);
 
       setProjects(projData);
       setSnippets(snipData);
       setStats(statData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching data:", error);
+      // Only show notification if it's not a background refresh
+      if (activeTab !== 'admin') {
+        setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const processResponse = async (res: Response) => {
+    const contentType = res.headers.get("content-type");
+    
+    if (res.status === 401 || res.status === 403) {
+      const isAuthAction = res.url.includes('/api/login');
+      if (!isAuthAction && token) {
+        console.warn("Authentication failure, clearing token");
+        localStorage.removeItem('devpulse_token');
+        setToken(null);
+        setNotification({ message: "Session expired. Please login again.", type: 'error' });
+      }
+    }
+
+    if (!res.ok) {
+      let errorMsg = `Error ${res.status}: ${res.statusText}`;
+      try {
+        if (contentType && contentType.includes("application/json")) {
+          const errData = await res.json();
+          errorMsg = errData.error || errData.message || errorMsg;
+        } else {
+          const text = await res.text();
+          console.error("Non-JSON error response:", text);
+        }
+      } catch (e) {
+        console.error("Error parsing error response:", e);
+      }
+      throw new Error(errorMsg);
+    }
+
+    if (contentType && contentType.includes("application/json")) {
+      return res.json();
+    } else {
+      const text = await res.text();
+      console.error("Expected JSON but got:", text.substring(0, 100));
+      throw new Error("Invalid response format from server");
     }
   };
 
@@ -147,8 +195,11 @@ export default function App() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/posts', {
-        method: 'POST',
+      const url = editingId ? `/api/posts/${editingId}` : '/api/posts';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -156,26 +207,74 @@ export default function App() {
         body: JSON.stringify(newPost)
       });
 
-      if (res.ok) {
-        setNewPost({
-          title: '',
-          content: '',
-          type: 'project',
-          status: 'publish',
-          meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
-        });
-        fetchData();
-        setNotification({ message: "Content published successfully!", type: 'success' });
-      } else {
-        const err = await res.json();
-        setNotification({ message: err.error || "Failed to publish content", type: 'error' });
-      }
-    } catch (error) {
-      console.error("Error creating post:", error);
-      setNotification({ message: "Network error: Could not connect to API", type: 'error' });
+      await processResponse(res);
+
+      setNewPost({
+        title: '',
+        content: '',
+        type: 'project',
+        status: 'publish',
+        meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+      });
+      setEditingId(null);
+      fetchData();
+      setNotification({ 
+        message: editingId ? "Content updated successfully!" : "Content published successfully!", 
+        type: 'success' 
+      });
+    } catch (error: any) {
+      console.error("Error saving post:", error);
+      setNotification({ message: error.message || "Failed to process request", type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeletePost = async (id: number) => {
+    if (!token || !window.confirm("Are you sure you want to delete this content? This action cannot be undone.")) return;
+    
+    try {
+      const res = await fetch(`/api/posts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      await processResponse(res);
+      fetchData();
+      setNotification({ message: "Content deleted successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      setNotification({ message: error.message || "Failed to delete content", type: 'error' });
+    }
+  };
+
+  const startEditing = (post: Post) => {
+    setEditingId(post.id);
+    setNewPost({
+      title: post.title,
+      content: post.content,
+      type: post.type,
+      status: post.status,
+      meta: {
+        github_url: post.meta.github_url || '',
+        project_url: post.meta.project_url || '',
+        tech_stack: post.meta.tech_stack || '',
+        language: post.meta.language || ''
+      }
+    });
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setNewPost({
+      title: '',
+      content: '',
+      type: 'project',
+      status: 'publish',
+      meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+    });
   };
 
   return (
@@ -395,9 +494,22 @@ export default function App() {
               <div className="lg:col-span-2 space-y-8">
                 {/* Create Post Form */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
-                  <div className="flex items-center gap-3 mb-8">
-                    <Box className="w-6 h-6 text-emerald-500" />
-                    <h2 className="text-2xl font-bold">Content Management</h2>
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <Box className="w-6 h-6 text-emerald-500" />
+                      <h2 className="text-2xl font-bold">
+                        {editingId ? 'Edit Content' : 'Content Management'}
+                      </h2>
+                    </div>
+                    {editingId && (
+                      <button 
+                        onClick={cancelEditing}
+                        className="text-zinc-500 hover:text-zinc-300 flex items-center gap-1 text-sm font-bold uppercase tracking-widest"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel Edit
+                      </button>
+                    )}
                   </div>
 
                   {!token ? (
@@ -449,13 +561,13 @@ export default function App() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Status</label>
                           <select 
                             value={newPost.status}
                             onChange={(e) => setNewPost({...newPost, status: e.target.value as any})}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
                           >
                             <option value="publish">Public</option>
                             <option value="private">Private (Locked)</option>
@@ -467,18 +579,31 @@ export default function App() {
                             type="text"
                             value={newPost.meta.tech_stack}
                             onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, tech_stack: e.target.value}})}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
                             placeholder="React, Node, etc."
                           />
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">GitHub URL</label>
                           <input 
                             type="text"
                             value={newPost.meta.github_url}
                             onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
                             placeholder="https://github.com/..."
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Project URL (Production Domain)</label>
+                          <input 
+                            type="text"
+                            value={newPost.meta.project_url}
+                            onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
+                            placeholder="https://your-app.com"
                           />
                         </div>
                       </div>
@@ -486,20 +611,82 @@ export default function App() {
                       <button 
                         disabled={isSubmitting}
                         type="submit"
-                        className="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className={`w-full font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 ${
+                          editingId 
+                            ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-amber-500/20' 
+                            : 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-emerald-500/20'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {isSubmitting ? (
                           <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <>
-                            <Box className="w-5 h-5" />
-                            <span>Publish to Headless API</span>
+                            {editingId ? <Edit3 className="w-5 h-5" /> : <Box className="w-5 h-5" />}
+                            <span>{editingId ? 'Update Content' : 'Publish to Headless API'}</span>
                           </>
                         )}
                       </button>
                     </form>
                   )}
                 </div>
+
+                {/* Content List for Management */}
+                {token && (
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                      <Layout className="w-6 h-6 text-emerald-500" />
+                      <h2 className="text-2xl font-bold">Live Content</h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      {[...projects, ...snippets].length === 0 ? (
+                        <p className="text-zinc-500 text-sm italic">No content found.</p>
+                      ) : (
+                        [...projects, ...snippets].sort((a, b) => b.id - a.id).map((post) => (
+                          <div key={post.id} className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl border border-zinc-700/30 group">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                post.type === 'project' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'
+                              }`}>
+                                {post.type === 'project' ? <Box className="w-5 h-5" /> : <Terminal className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-zinc-100">{post.title}</h4>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                    post.status === 'publish' 
+                                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                      : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                                  }`}>
+                                    {post.status.toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-zinc-500 mt-1 truncate max-w-[200px]">{post.content}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => startEditing(post)}
+                                className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 transition-colors"
+                                title="Edit"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeletePost(post.id)}
+                                className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-8">
@@ -626,15 +813,29 @@ function ProjectCard({ project, onClick }: { project: Post, onClick: () => void 
 
       <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm hover:text-emerald-400 transition-colors">
-            <Github className="w-4 h-4" />
-            <span>Source</span>
-          </div>
+          {project.meta.github_url && (
+            <a 
+              href={project.meta.github_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-zinc-500 text-sm hover:text-emerald-400 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Github className="w-4 h-4" />
+              <span>Source</span>
+            </a>
+          )}
           {project.meta.project_url && (
-            <div className="flex items-center gap-2 text-zinc-500 text-sm hover:text-emerald-400 transition-colors">
+            <a 
+              href={project.meta.project_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-zinc-500 text-sm hover:text-emerald-400 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
               <ExternalLink className="w-4 h-4" />
               <span>Demo</span>
-            </div>
+            </a>
           )}
         </div>
         <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:translate-x-1 transition-transform" />
