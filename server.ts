@@ -29,8 +29,22 @@ const initDb = async () => {
         content TEXT,
         type TEXT NOT NULL, -- 'project' or 'snippet'
         status TEXT DEFAULT 'publish',
+        order_index INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Safe migration: Add order_index column if it doesn't exist
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 
+          FROM information_schema.columns 
+          WHERE table_name = 'posts' AND column_name = 'order_index'
+        ) THEN
+          ALTER TABLE posts ADD COLUMN order_index INTEGER DEFAULT 0;
+          UPDATE posts SET order_index = id - 1 WHERE order_index = 0;
+        END IF;
+      END $$;
 
       CREATE TABLE IF NOT EXISTS post_meta (
         id SERIAL PRIMARY KEY,
@@ -226,6 +240,39 @@ async function startServer() {
     }
   });
 
+  // Update Post Order Route (Authenticated)
+  app.put("/api/posts/:id/order", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const { id } = req.params;
+    const { order_index } = req.body;
+
+    if (typeof order_index !== 'number' || order_index < 0) {
+      return res.status(400).json({ error: "Invalid order_index value" });
+    }
+
+    try {
+      const result = await pool.query(
+        "UPDATE posts SET order_index = $1 WHERE id = $2 RETURNING id, order_index", 
+        [order_index, id]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      res.json({ 
+        message: "Post order updated successfully", 
+        id: result.rows[0].id, 
+        order_index: result.rows[0].order_index 
+      });
+    } catch (error) {
+      console.error("Error updating post order:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Delete Post Route (Authenticated)
   app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
     const user = (req as any).user;
@@ -271,7 +318,7 @@ async function startServer() {
         paramCount += 2;
       }
 
-      const postResults = await pool.query(query + " ORDER BY id ASC", params);
+      const postResults = await pool.query(query + " ORDER BY order_index ASC, id ASC", params);
       const posts = postResults.rows;
       
       const postsWithMeta = await Promise.all(posts.map(async (post: any) => {

@@ -17,7 +17,8 @@ import {
   Trash2,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  GripVertical
 } from 'lucide-react';
 
 interface Post {
@@ -26,6 +27,7 @@ interface Post {
   content: string;
   type: 'project' | 'snippet';
   status: 'publish' | 'private';
+  order_index?: number;
   meta: {
     github_url?: string;
     project_url?: string;
@@ -275,6 +277,72 @@ export default function App() {
       status: 'publish',
       meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
     });
+  };
+
+  const moveItemUp = async (post: Post) => {
+    if (!token) return;
+    
+    const allPosts = [...projects, ...snippets].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const currentIndex = allPosts.findIndex(p => p.id === post.id);
+    
+    if (currentIndex === 0) return; // Already at top
+    
+    const newPosts = [...allPosts];
+    const [movedItem] = newPosts.splice(currentIndex, 1);
+    newPosts.splice(currentIndex - 1, 0, movedItem);
+    
+    try {
+      const updatePromises = newPosts.map((p, index) => 
+        fetch(`/api/posts/${p.id}/order`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ order_index: index })
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      fetchData();
+      setNotification({ message: "Item moved up successfully!", type: 'success' });
+    } catch (error: any) {
+      console.error("Error moving item:", error);
+      setNotification({ message: "Failed to move item", type: 'error' });
+    }
+  };
+
+  const moveItemDown = async (post: Post) => {
+    if (!token) return;
+    
+    const allPosts = [...projects, ...snippets].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    const currentIndex = allPosts.findIndex(p => p.id === post.id);
+    
+    if (currentIndex === allPosts.length - 1) return; // Already at bottom
+    
+    const newPosts = [...allPosts];
+    const [movedItem] = newPosts.splice(currentIndex, 1);
+    newPosts.splice(currentIndex + 1, 0, movedItem);
+    
+    try {
+      const updatePromises = newPosts.map((p, index) => 
+        fetch(`/api/posts/${p.id}/order`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ order_index: index })
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      fetchData();
+      setNotification({ message: "Item moved down successfully!", type: 'success' });
+    } catch (error: any) {
+      console.error("Error moving item:", error);
+      setNotification({ message: "Failed to move item", type: 'error' });
+    }
   };
 
   return (
@@ -636,13 +704,14 @@ export default function App() {
                     <div className="flex items-center gap-3 mb-8">
                       <Layout className="w-6 h-6 text-emerald-500" />
                       <h2 className="text-2xl font-bold">Live Content</h2>
+                      <span className="text-xs text-zinc-500 ml-auto">Use ↑↓ buttons to reorder</span>
                     </div>
 
                     <div className="space-y-4">
-                      {[...projects, ...snippets].length === 0 ? (
+                      {[...projects, ...snippets].sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).length === 0 ? (
                         <p className="text-zinc-500 text-sm italic">No content found.</p>
                       ) : (
-                        [...projects, ...snippets].sort((a, b) => b.id - a.id).map((post) => (
+                        [...projects, ...snippets].sort((a, b) => (a.order_index || 0) - (b.order_index || 0)).map((post) => (
                           <div key={post.id} className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl border border-zinc-700/30 group">
                             <div className="flex items-center gap-4">
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -660,12 +729,29 @@ export default function App() {
                                   }`}>
                                     {post.status.toUpperCase()}
                                   </span>
+                                  <span className="text-[10px] text-zinc-500">Order: {post.order_index || 0}</span>
                                 </div>
                                 <p className="text-xs text-zinc-500 mt-1 truncate max-w-[200px]">{post.content}</p>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => moveItemUp(post)}
+                                className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 transition-colors"
+                                title="Move Up"
+                                disabled={false}
+                              >
+                                ↑
+                              </button>
+                              <button 
+                                onClick={() => moveItemDown(post)}
+                                className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 transition-colors"
+                                title="Move Down"
+                                disabled={false}
+                              >
+                                ↓
+                              </button>
                               <button 
                                 onClick={() => startEditing(post)}
                                 className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 transition-colors"
@@ -684,7 +770,7 @@ export default function App() {
                           </div>
                         ))
                       )}
-                    </div>
+                    </div>  
                   </div>
                 )}
               </div>
