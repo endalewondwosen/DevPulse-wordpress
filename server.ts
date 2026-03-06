@@ -1,69 +1,86 @@
 import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
-import Database from "better-sqlite3";
+import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 
+const { Pool } = pg;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const JWT_SECRET = "devpulse-secret-key-123";
+const JWT_SECRET = process.env.JWT_SECRET || "devpulse-secret-key-123";
 
-const db = new Database("devpulse.db");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/enterprize-app?schema=public",
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+});
 
-// Initialize Database (Simulating WordPress CPTs and Meta)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    content TEXT,
-    type TEXT NOT NULL, -- 'project' or 'snippet'
-    status TEXT DEFAULT 'publish',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+// Initialize Database (PostgreSQL CPTs and Meta)
+const initDb = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS posts (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT,
+        type TEXT NOT NULL, -- 'project' or 'snippet'
+        status TEXT DEFAULT 'publish',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-  CREATE TABLE IF NOT EXISTS post_meta (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER,
-    meta_key TEXT,
-    meta_value TEXT,
-    FOREIGN KEY(post_id) REFERENCES posts(id)
-  );
+      CREATE TABLE IF NOT EXISTS post_meta (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER,
+        meta_key TEXT,
+        meta_value TEXT,
+        FOREIGN KEY(post_id) REFERENCES posts(id) ON DELETE CASCADE
+      );
 
-  CREATE TABLE IF NOT EXISTS api_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    endpoint TEXT,
-    method TEXT,
-    post_id INTEGER,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+      CREATE TABLE IF NOT EXISTS api_logs (
+        id SERIAL PRIMARY KEY,
+        endpoint TEXT,
+        method TEXT,
+        post_id INTEGER,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-// Seed data if empty
-const postCount = db.prepare("SELECT COUNT(*) as count FROM posts").get() as { count: number };
-if (postCount.count === 0) {
-  const insertPost = db.prepare("INSERT INTO posts (title, content, type) VALUES (?, ?, ?)");
-  const insertMeta = db.prepare("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES (?, ?, ?)");
+    // Seed data if empty
+    const postCountResult = await pool.query("SELECT COUNT(*) FROM posts");
+    const count = parseInt(postCountResult.rows[0].count);
 
-  const p1 = insertPost.run("Portfolio Website", "A high-performance portfolio built with React.", "project").lastInsertRowid;
-  insertMeta.run(p1, "github_url", "https://github.com/user/portfolio");
-  insertMeta.run(p1, "project_url", "https://portfolio-demo.com");
-  insertMeta.run(p1, "tech_stack", "React, Tailwind, Vite");
+    if (count === 0) {
+      console.log("Seeding initial data...");
+      const insertPostText = "INSERT INTO posts (title, content, type, status) VALUES ($1, $2, $3, $4) RETURNING id";
+      const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
 
-  const p2 = insertPost.run("E-commerce API", "Node.js backend for a modern store.", "project").lastInsertRowid;
-  insertMeta.run(p2, "github_url", "https://github.com/user/shop-api");
-  insertMeta.run(p2, "project_url", "https://api-docs.shop.com");
-  insertMeta.run(p2, "tech_stack", "Node.js, Express, PostgreSQL");
+      const res1 = await pool.query(insertPostText, ["Portfolio Website", "A high-performance portfolio built with React.", "project", "publish"]);
+      const p1 = res1.rows[0].id;
+      await pool.query(insertMetaText, [p1, "github_url", "https://github.com/user/portfolio"]);
+      await pool.query(insertMetaText, [p1, "project_url", "https://portfolio-demo.com"]);
+      await pool.query(insertMetaText, [p1, "tech_stack", "React, Tailwind, Vite"]);
 
-  const s1 = insertPost.run("React UseEffect Hook", "Common patterns for useEffect.", "snippet").lastInsertRowid;
-  insertMeta.run(s1, "language", "typescript");
+      const res2 = await pool.query(insertPostText, ["E-commerce API", "Node.js backend for a modern store.", "project", "publish"]);
+      const p2 = res2.rows[0].id;
+      await pool.query(insertMetaText, [p2, "github_url", "https://github.com/user/shop-api"]);
+      await pool.query(insertMetaText, [p2, "project_url", "https://api-docs.shop.com"]);
+      await pool.query(insertMetaText, [p2, "tech_stack", "Node.js, Express, PostgreSQL"]);
 
-  // Private content
-  const p3 = insertPost.run("Secret Project X", "This is a private project only visible to authenticated developers.", "project").lastInsertRowid;
-  db.prepare("UPDATE posts SET status = 'private' WHERE id = ?").run(p3);
-  insertMeta.run(p3, "tech_stack", "Stealth, AI, Quantum");
-}
+      const res3 = await pool.query(insertPostText, ["React UseEffect Hook", "Common patterns for useEffect.", "snippet", "publish"]);
+      const s1 = res3.rows[0].id;
+      await pool.query(insertMetaText, [s1, "language", "typescript"]);
+
+      // Private content
+      const res4 = await pool.query(insertPostText, ["Secret Project X", "This is a private project only visible to authenticated developers.", "project", "private"]);
+      const p3 = res4.rows[0].id;
+      await pool.query(insertMetaText, [p3, "tech_stack", "Stealth, AI, Quantum"]);
+    }
+  } catch (err) {
+    console.error("Database initialization failed", err);
+  }
+};
 
 async function startServer() {
   const app = express();
@@ -124,19 +141,25 @@ async function startServer() {
   });
 
   // Logging Middleware (Requested functionality)
-  app.use((req, res, next) => {
+  app.use(async (req, res, next) => {
     if (req.path.startsWith('/api/posts/')) {
       const id = req.path.split('/').pop();
       if (id && !isNaN(Number(id))) {
-        db.prepare("INSERT INTO api_logs (endpoint, method, post_id) VALUES (?, ?, ?)")
-          .run(req.path, req.method, id);
+        try {
+          await pool.query(
+            "INSERT INTO api_logs (endpoint, method, post_id) VALUES ($1, $2, $3)",
+            [req.path, req.method, parseInt(id)]
+          );
+        } catch (e) {
+          console.error("Failed to log API request", e);
+        }
       }
     }
     next();
   });
 
   // Create Post Route (Authenticated)
-  app.post("/api/posts", authenticateToken, (req, res) => {
+  app.post("/api/posts", authenticateToken, async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -147,14 +170,16 @@ async function startServer() {
     }
 
     try {
-      const insertPost = db.prepare("INSERT INTO posts (title, content, type, status) VALUES (?, ?, ?, ?)");
-      const result = insertPost.run(title, content || "", type, status || "publish");
-      const postId = result.lastInsertRowid;
+      const insertPostText = "INSERT INTO posts (title, content, type, status) VALUES ($1, $2, $3, $4) RETURNING id";
+      const result = await pool.query(insertPostText, [title, content || "", type, status || "publish"]);
+      const postId = result.rows[0].id;
 
       if (meta && typeof meta === 'object') {
-        const insertMeta = db.prepare("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES (?, ?, ?)");
+        const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
         for (const [key, value] of Object.entries(meta)) {
-          if (value !== undefined && value !== null) insertMeta.run(postId, key, String(value));
+          if (value !== undefined && value !== null) {
+            await pool.query(insertMetaText, [postId, key, String(value)]);
+          }
         }
       }
 
@@ -166,7 +191,7 @@ async function startServer() {
   });
 
   // Update Post Route (Authenticated)
-  app.put("/api/posts/:id", authenticateToken, (req, res) => {
+  app.put("/api/posts/:id", authenticateToken, async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -174,20 +199,19 @@ async function startServer() {
     const { title, content, type, status, meta } = req.body;
 
     try {
-      const updatePost = db.prepare("UPDATE posts SET title = ?, content = ?, type = ?, status = ? WHERE id = ?");
-      const result = updatePost.run(title, content || "", type, status || "publish", id);
+      const updatePostText = "UPDATE posts SET title = $1, content = $2, type = $3, status = $4 WHERE id = $5 RETURNING id";
+      const result = await pool.query(updatePostText, [title, content || "", type, status || "publish", id]);
 
-      if (result.changes === 0) {
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      // Update meta: delete old and insert new (simplest approach for a demo)
-      db.prepare("DELETE FROM post_meta WHERE post_id = ?").run(id);
+      await pool.query("DELETE FROM post_meta WHERE post_id = $1", [id]);
       if (meta && typeof meta === 'object') {
-        const insertMeta = db.prepare("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES (?, ?, ?)");
+        const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
         for (const [key, value] of Object.entries(meta)) {
           if (value !== undefined && value !== null && value !== "") {
-            insertMeta.run(id, key, String(value));
+            await pool.query(insertMetaText, [id, key, String(value)]);
           }
         }
       }
@@ -200,18 +224,16 @@ async function startServer() {
   });
 
   // Delete Post Route (Authenticated)
-  app.delete("/api/posts/:id", authenticateToken, (req, res) => {
+  app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
     const { id } = req.params;
 
     try {
-      // Delete meta first due to FK (though FK is not strictly enforced in this setup without PRAGMA)
-      db.prepare("DELETE FROM post_meta WHERE post_id = ?").run(id);
-      const result = db.prepare("DELETE FROM posts WHERE id = ?").run(id);
+      const result = await pool.query("DELETE FROM posts WHERE id = $1 RETURNING id", [id]);
 
-      if (result.changes === 0) {
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: "Post not found" });
       }
 
@@ -223,7 +245,7 @@ async function startServer() {
   });
 
   // API Routes (Simulating WP REST API)
-  app.get("/api/posts", authenticateToken, (req, res) => {
+  app.get("/api/posts", authenticateToken, async (req, res) => {
     try {
       const type = req.query.type || 'project';
       const search = req.query.search as string;
@@ -231,8 +253,9 @@ async function startServer() {
       
       console.log(`Fetching posts: type=${type}, search=${search}, authenticated=${!!user}`);
 
-      let query = "SELECT * FROM posts WHERE type = ? AND (status = 'publish'";
+      let query = "SELECT * FROM posts WHERE type = $1 AND (status = 'publish'";
       let params: any[] = [type];
+      let paramCount = 2; // Next param index
 
       if (user) {
         query += " OR status = 'private'";
@@ -240,20 +263,22 @@ async function startServer() {
       query += ")";
 
       if (search) {
-        query += " AND (title LIKE ? OR content LIKE ?)";
+        query += ` AND (title ILIKE $${paramCount} OR content ILIKE $${paramCount + 1})`;
         params.push(`%${search}%`, `%${search}%`);
+        paramCount += 2;
       }
 
-      const posts = db.prepare(query).all(...params);
+      const postResults = await pool.query(query + " ORDER BY id ASC", params);
+      const posts = postResults.rows;
       
-      const postsWithMeta = posts.map((post: any) => {
-        const meta = db.prepare("SELECT meta_key, meta_value FROM post_meta WHERE post_id = ?").all(post.id);
-        const metaObj = meta.reduce((acc: any, m: any) => {
+      const postsWithMeta = await Promise.all(posts.map(async (post: any) => {
+        const metaResults = await pool.query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
+        const metaObj = metaResults.rows.reduce((acc: any, m: any) => {
           acc[m.meta_key] = m.meta_value;
           return acc;
         }, {});
         return { ...post, meta: metaObj };
-      });
+      }));
 
       res.json(postsWithMeta);
     } catch (error) {
@@ -262,13 +287,15 @@ async function startServer() {
     }
   });
 
-  app.get("/api/posts/:id", (req, res) => {
+  app.get("/api/posts/:id", async (req, res) => {
     try {
-      const post = db.prepare("SELECT * FROM posts WHERE id = ?").get(req.params.id) as any;
+      const postResult = await pool.query("SELECT * FROM posts WHERE id = $1", [req.params.id]);
+      const post = postResult.rows[0];
+      
       if (!post) return res.status(404).json({ error: "Post not found" });
 
-      const meta = db.prepare("SELECT meta_key, meta_value FROM post_meta WHERE post_id = ?").all(post.id);
-      const metaObj = meta.reduce((acc: any, m: any) => {
+      const metaResult = await pool.query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
+      const metaObj = metaResult.rows.reduce((acc: any, m: any) => {
         acc[m.meta_key] = m.meta_value;
         return acc;
       }, {});
@@ -281,10 +308,10 @@ async function startServer() {
   });
 
   // Stats for the dashboard
-  app.get("/api/stats", (req, res) => {
+  app.get("/api/stats", async (req, res) => {
     try {
-      const logs = db.prepare("SELECT endpoint, COUNT(*) as views FROM api_logs GROUP BY endpoint ORDER BY views DESC LIMIT 5").all();
-      res.json(logs || []);
+      const logsResult = await pool.query("SELECT endpoint, COUNT(*) as views FROM api_logs GROUP BY endpoint ORDER BY views DESC LIMIT 5");
+      res.json(logsResult.rows || []);
     } catch (error) {
       console.error("Stats error:", error);
       res.status(500).json({ error: "Failed to fetch stats" });
@@ -320,9 +347,12 @@ async function startServer() {
     });
   }
 
+  // Initialize DB before listening
+  await initDb();
+
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`DevPulse Server running on http://localhost:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch(console.dir);
