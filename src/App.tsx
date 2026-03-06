@@ -82,6 +82,13 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [token, searchQuery]);
 
+  // Prevent admin tab access when navigation is hidden for portfolio
+  useEffect(() => {
+    if (activeTab === 'admin') {
+      setActiveTab('projects');
+    }
+  }, [activeTab]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -358,7 +365,8 @@ export default function App() {
           </div>
           
           <div className="flex gap-1 bg-zinc-800/50 p-1 rounded-xl border border-zinc-700/50">
-            {(['projects', 'snippets', 'admin'] as const).map((tab) => (
+            {/* Admin tab hidden for portfolio presentation - uncomment to enable */}
+            {(['projects', 'snippets'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -371,8 +379,23 @@ export default function App() {
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
+            {/* 
+            <button
+              key="admin"
+              onClick={() => setActiveTab('admin')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'admin' 
+                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+              }`}
+            >
+              Admin
+            </button>
+            */}
           </div>
 
+          {/* Login/Logout buttons hidden for portfolio presentation - uncomment to enable */}
+          {/* 
           <div className="flex items-center gap-4">
             {token ? (
               <button 
@@ -392,6 +415,7 @@ export default function App() {
               </button>
             )}
           </div>
+          */}
         </div>
       </nav>
 
