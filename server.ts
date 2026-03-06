@@ -87,7 +87,7 @@ const initDb = async () => {
 async function startServer() {
   const app = express();
   // Render injects its own PORT environment variable. We must bind to it.
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
