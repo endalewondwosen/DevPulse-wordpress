@@ -14,7 +14,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "devpulse-secret-key-123";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/enterprize-app?schema=public",
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === "production" && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost") 
+    ? { rejectUnauthorized: false } 
+    : false
 });
 
 // Initialize Database (PostgreSQL CPTs and Meta)
