@@ -199,7 +199,12 @@ export default function App() {
     }
   };
 
-  const processResponse = async (res: Response) => {
+  const processResponse = async (res: Response | null) => {
+    if (!res) {
+      console.warn("Null response received");
+      return [];
+    }
+    
     const contentType = res.headers.get("content-type");
     
     if (res.status === 401 || res.status === 403) {
