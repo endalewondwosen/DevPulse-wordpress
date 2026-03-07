@@ -1,109 +1,237 @@
 import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
+import Database from "better-sqlite3";
 import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
-
-const { Pool } = pg;
+import multer from "multer";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const JWT_SECRET = process.env.JWT_SECRET || "devpulse-secret-key-123";
+const JWT_SECRET = "devpulse-secret-key-123";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/enterprize-app?schema=public",
-  ssl: process.env.NODE_ENV === "production" && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost") 
-    ? { rejectUnauthorized: false } 
-    : false
-});
+// --- DATABASE CONFIGURATION ---
+const isPostgres = !!process.env.DATABASE_URL;
+let pgPool: pg.Pool | null = null;
+let sqliteDb: any = null;
 
-// Initialize Database (PostgreSQL CPTs and Meta)
-const initDb = async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS posts (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        content TEXT,
-        type TEXT NOT NULL, -- 'project' or 'snippet'
-        status TEXT DEFAULT 'publish',
-        order_index INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+if (isPostgres) {
+  pgPool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  console.log("Using PostgreSQL backend");
+} else {
+  sqliteDb = new Database("devpulse.db");
+  console.log("Using SQLite backend");
+}
 
-      -- Safe migration: Add order_index column if it doesn't exist
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 
-          FROM information_schema.columns 
-          WHERE table_name = 'posts' AND column_name = 'order_index'
-        ) THEN
-          ALTER TABLE posts ADD COLUMN order_index INTEGER DEFAULT 0;
-          UPDATE posts SET order_index = id - 1 WHERE order_index = 0;
-        END IF;
-      END $$;
-
-      CREATE TABLE IF NOT EXISTS post_meta (
-        id SERIAL PRIMARY KEY,
-        post_id INTEGER,
-        meta_key TEXT,
-        meta_value TEXT,
-        FOREIGN KEY(post_id) REFERENCES posts(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS api_logs (
-        id SERIAL PRIMARY KEY,
-        endpoint TEXT,
-        method TEXT,
-        post_id INTEGER,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Seed data if empty
-    const postCountResult = await pool.query("SELECT COUNT(*) FROM posts");
-    const count = parseInt(postCountResult.rows[0].count);
-
-    if (count === 0) {
-      console.log("Seeding initial data...");
-      const insertPostText = "INSERT INTO posts (title, content, type, status) VALUES ($1, $2, $3, $4) RETURNING id";
-      const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
-
-      const res1 = await pool.query(insertPostText, ["Portfolio Website", "A high-performance portfolio built with React.", "project", "publish"]);
-      const p1 = res1.rows[0].id;
-      await pool.query(insertMetaText, [p1, "github_url", "https://github.com/user/portfolio"]);
-      await pool.query(insertMetaText, [p1, "project_url", "https://portfolio-demo.com"]);
-      await pool.query(insertMetaText, [p1, "tech_stack", "React, Tailwind, Vite"]);
-
-      const res2 = await pool.query(insertPostText, ["E-commerce API", "Node.js backend for a modern store.", "project", "publish"]);
-      const p2 = res2.rows[0].id;
-      await pool.query(insertMetaText, [p2, "github_url", "https://github.com/user/shop-api"]);
-      await pool.query(insertMetaText, [p2, "project_url", "https://api-docs.shop.com"]);
-      await pool.query(insertMetaText, [p2, "tech_stack", "Node.js, Express, PostgreSQL"]);
-
-      const res3 = await pool.query(insertPostText, ["React UseEffect Hook", "Common patterns for useEffect.", "snippet", "publish"]);
-      const s1 = res3.rows[0].id;
-      await pool.query(insertMetaText, [s1, "language", "typescript"]);
-
-      // Private content
-      const res4 = await pool.query(insertPostText, ["Secret Project X", "This is a private project only visible to authenticated developers.", "project", "private"]);
-      const p3 = res4.rows[0].id;
-      await pool.query(insertMetaText, [p3, "tech_stack", "Stealth, AI, Quantum"]);
+// Unified Query Helper
+async function query(text: string, params: any[] = []) {
+  if (isPostgres) {
+    const res = await pgPool!.query(text, params);
+    return res.rows;
+  } else {
+    // Convert Postgres $1, $2 to SQLite ?
+    const sqliteText = text.replace(/\$(\d+)/g, '?');
+    const stmt = sqliteDb.prepare(sqliteText);
+    if (text.trim().toUpperCase().startsWith("SELECT")) {
+      return stmt.all(...params);
+    } else {
+      const result = stmt.run(...params);
+      return { lastInsertRowid: result.lastInsertRowid, changes: result.changes };
     }
-  } catch (err) {
-    console.error("Database initialization failed", err);
   }
-};
+}
+
+async function queryOne(text: string, params: any[] = []) {
+  const rows = await query(text, params);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+async function exec(text: string) {
+  if (isPostgres) {
+    await pgPool!.query(text);
+  } else {
+    sqliteDb.exec(text);
+  }
+}
+
+// Initialize Database
+async function initDb() {
+  const idType = isPostgres ? "SERIAL PRIMARY KEY" : "INTEGER PRIMARY KEY AUTOINCREMENT";
+  const timestampDefault = isPostgres ? "CURRENT_TIMESTAMP" : "CURRENT_TIMESTAMP";
+
+  await exec(`
+    CREATE TABLE IF NOT EXISTS posts (
+      id ${idType},
+      title TEXT NOT NULL,
+      content TEXT,
+      type TEXT NOT NULL,
+      status TEXT DEFAULT 'publish',
+      image_url TEXT,
+      created_at TIMESTAMP DEFAULT ${timestampDefault}
+    );
+
+    CREATE TABLE IF NOT EXISTS post_meta (
+      id ${idType},
+      post_id INTEGER,
+      meta_key TEXT,
+      meta_value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS experience (
+      id ${idType},
+      company TEXT NOT NULL,
+      role TEXT NOT NULL,
+      period TEXT NOT NULL,
+      description TEXT,
+      sort_order INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS skills (
+      id ${idType},
+      category TEXT NOT NULL,
+      name TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS api_logs (
+      id ${idType},
+      endpoint TEXT,
+      method TEXT,
+      post_id INTEGER,
+      timestamp TIMESTAMP DEFAULT ${timestampDefault}
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id ${idType},
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      subject TEXT,
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'unread',
+      created_at TIMESTAMP DEFAULT ${timestampDefault}
+    );
+  `);
+
+  // Seed data if empty
+  const countRes = await queryOne("SELECT COUNT(*) as count FROM posts");
+  const count = parseInt(countRes.count);
+
+  if (count === 0) {
+    console.log("Seeding initial data...");
+    
+    // Seed Projects
+    const projects = [
+      {
+        title: "E-service portal",
+        content: "I have developed E-eservice platform for different cities such as shaggar, Shashemen, Dire Dawa, Adama cities. eservice system is an electronic platform that provide online government service for the citizens.",
+        type: "project",
+        image_url: "https://picsum.photos/seed/portal/800/450",
+        meta: { tech_stack: "React, Node.js, PostgreSQL", project_url: "https://eservice.gov.et" }
+      },
+      {
+        title: "Shagger city traffic management system",
+        content: "The system allow traffic police and traffic controller to register traffic penalty or traffic charges on drivers. It also allows crime controller to register traffic accident and drivers to complain.",
+        type: "project",
+        image_url: "https://picsum.photos/seed/traffic/800/450",
+        meta: { tech_stack: "React, NestJS, PostgreSQL" }
+      },
+      {
+        title: "ElectroCart – AI-Powered E-Commerce",
+        content: "A state-of-the-art e-commerce storefront for premium electronics, built with Next.js 14 (App Router) and React 19. Integrates Google Gemini API for personalized shopping experiences.",
+        type: "project",
+        image_url: "https://picsum.photos/seed/ecommerce/800/450",
+        meta: { tech_stack: "Next.js 14, React 19, Gemini API", github_url: "https://github.com/wondwosen/electrocart" }
+      }
+    ];
+
+    for (const p of projects) {
+      let postId;
+      if (isPostgres) {
+        const res = await query("INSERT INTO posts (title, content, type, image_url) VALUES ($1, $2, $3, $4) RETURNING id", [p.title, p.content, p.type, p.image_url]);
+        postId = res[0].id;
+      } else {
+        const res = await query("INSERT INTO posts (title, content, type, image_url) VALUES ($1, $2, $3, $4)", [p.title, p.content, p.type, p.image_url]);
+        postId = res.lastInsertRowid;
+      }
+      
+      if (p.meta) {
+        for (const [key, value] of Object.entries(p.meta)) {
+          await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [postId, key, value]);
+        }
+      }
+    }
+
+    // Seed Experience
+    await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [
+      "Adnan Business Group Technology Company", 
+      "Full stack Developer", 
+      "May 2024 - Present", 
+      "Developing web applications for Adama, Shagger, and Dire Dawa city e-services, traffic management systems, and project management tools.", 
+      1
+    ]);
+
+    // Seed Skills
+    const skills = [
+      { cat: "frontend", name: "React JS / Next JS", order: 1 },
+      { cat: "frontend", name: "TypeScript", order: 2 },
+      { cat: "frontend", name: "Tailwind CSS", order: 3 },
+      { cat: "backend", name: "Node.js / Express", order: 1 },
+      { cat: "backend", name: "Nest JS", order: 2 },
+      { cat: "backend", name: "Laravel / PHP", order: 3 },
+      { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
+      { cat: "devops", name: "MongoDB", order: 2 },
+      { cat: "devops", name: "Docker", order: 3 }
+    ];
+
+    for (const s of skills) {
+      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+    }
+  }
+}
 
 async function startServer() {
+  await initDb();
   const app = express();
-  // Render injects its own PORT environment variable. We must bind to it.
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
 
   app.use(express.json());
+
+  // Ensure uploads directory exists
+  const uploadsDir = path.join(__dirname, "public", "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Configure Multer for file uploads
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+  const upload = multer({ 
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only images are allowed'));
+      }
+    }
+  });
+
+  // Serve static files from public/uploads
+  app.use('/uploads', express.static(uploadsDir));
 
   // Request Logger
   app.use((req, res, next) => {
@@ -162,17 +290,23 @@ async function startServer() {
     if (req.path.startsWith('/api/posts/')) {
       const id = req.path.split('/').pop();
       if (id && !isNaN(Number(id))) {
-        try {
-          await pool.query(
-            "INSERT INTO api_logs (endpoint, method, post_id) VALUES ($1, $2, $3)",
-            [req.path, req.method, parseInt(id)]
-          );
-        } catch (e) {
-          console.error("Failed to log API request", e);
-        }
+        await query("INSERT INTO api_logs (endpoint, method, post_id) VALUES ($1, $2, $3)", [req.path, req.method, id]);
       }
     }
     next();
+  });
+
+  // File Upload Route (Authenticated)
+  app.post("/api/upload", authenticateToken, upload.single('image'), (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
   });
 
   // Create Post Route (Authenticated)
@@ -180,22 +314,26 @@ async function startServer() {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-    const { title, content, type, status, meta } = req.body;
+    const { title, content, type, status, image_url, meta } = req.body;
     
     if (!title || !type) {
       return res.status(400).json({ error: "Title and Type are required" });
     }
 
     try {
-      const insertPostText = "INSERT INTO posts (title, content, type, status) VALUES ($1, $2, $3, $4) RETURNING id";
-      const result = await pool.query(insertPostText, [title, content || "", type, status || "publish"]);
-      const postId = result.rows[0].id;
+      let postId;
+      if (isPostgres) {
+        const result = await query("INSERT INTO posts (title, content, type, status, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content || "", type, status || "publish", image_url || null]);
+        postId = result[0].id;
+      } else {
+        const result = await query("INSERT INTO posts (title, content, type, status, image_url) VALUES ($1, $2, $3, $4, $5)", [title, content || "", type, status || "publish", image_url || null]);
+        postId = result.lastInsertRowid;
+      }
 
       if (meta && typeof meta === 'object') {
-        const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
         for (const [key, value] of Object.entries(meta)) {
           if (value !== undefined && value !== null) {
-            await pool.query(insertMetaText, [postId, key, String(value)]);
+            await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [postId, key, String(value)]);
           }
         }
       }
@@ -213,22 +351,21 @@ async function startServer() {
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
     const { id } = req.params;
-    const { title, content, type, status, meta } = req.body;
+    const { title, content, type, status, image_url, meta } = req.body;
 
     try {
-      const updatePostText = "UPDATE posts SET title = $1, content = $2, type = $3, status = $4 WHERE id = $5 RETURNING id";
-      const result = await pool.query(updatePostText, [title, content || "", type, status || "publish", id]);
+      const result = await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5 WHERE id = $6", [title, content || "", type, status || "publish", image_url || null, id]);
 
-      if (result.rowCount === 0) {
+      if (!isPostgres && result.changes === 0) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      await pool.query("DELETE FROM post_meta WHERE post_id = $1", [id]);
+      // Update meta: delete old and insert new
+      await query("DELETE FROM post_meta WHERE post_id = $1", [id]);
       if (meta && typeof meta === 'object') {
-        const insertMetaText = "INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)";
         for (const [key, value] of Object.entries(meta)) {
           if (value !== undefined && value !== null && value !== "") {
-            await pool.query(insertMetaText, [id, key, String(value)]);
+            await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [id, key, String(value)]);
           }
         }
       }
@@ -236,39 +373,6 @@ async function startServer() {
       res.json({ message: "Post updated successfully" });
     } catch (error) {
       console.error("Error updating post:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Update Post Order Route (Authenticated)
-  app.put("/api/posts/:id/order", authenticateToken, async (req, res) => {
-    const user = (req as any).user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    const { id } = req.params;
-    const { order_index } = req.body;
-
-    if (typeof order_index !== 'number' || order_index < 0) {
-      return res.status(400).json({ error: "Invalid order_index value" });
-    }
-
-    try {
-      const result = await pool.query(
-        "UPDATE posts SET order_index = $1 WHERE id = $2 RETURNING id, order_index", 
-        [order_index, id]
-      );
-
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-
-      res.json({ 
-        message: "Post order updated successfully", 
-        id: result.rows[0].id, 
-        order_index: result.rows[0].order_index 
-      });
-    } catch (error) {
-      console.error("Error updating post order:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -281,9 +385,10 @@ async function startServer() {
     const { id } = req.params;
 
     try {
-      const result = await pool.query("DELETE FROM posts WHERE id = $1 RETURNING id", [id]);
+      await query("DELETE FROM post_meta WHERE post_id = $1", [id]);
+      const result = await query("DELETE FROM posts WHERE id = $1", [id]);
 
-      if (result.rowCount === 0) {
+      if (!isPostgres && result.changes === 0) {
         return res.status(404).json({ error: "Post not found" });
       }
 
@@ -303,27 +408,24 @@ async function startServer() {
       
       console.log(`Fetching posts: type=${type}, search=${search}, authenticated=${!!user}`);
 
-      let query = "SELECT * FROM posts WHERE type = $1 AND (status = 'publish'";
+      let queryText = "SELECT * FROM posts WHERE type = $1 AND (status = 'publish'";
       let params: any[] = [type];
-      let paramCount = 2; // Next param index
 
       if (user) {
-        query += " OR status = 'private'";
+        queryText += " OR status = 'private'";
       }
-      query += ")";
+      queryText += ")";
 
       if (search) {
-        query += ` AND (title ILIKE $${paramCount} OR content ILIKE $${paramCount + 1})`;
+        queryText += " AND (title LIKE $2 OR content LIKE $3)";
         params.push(`%${search}%`, `%${search}%`);
-        paramCount += 2;
       }
 
-      const postResults = await pool.query(query + " ORDER BY order_index ASC, id ASC", params);
-      const posts = postResults.rows;
+      const posts = await query(queryText, params);
       
       const postsWithMeta = await Promise.all(posts.map(async (post: any) => {
-        const metaResults = await pool.query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
-        const metaObj = metaResults.rows.reduce((acc: any, m: any) => {
+        const meta = await query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
+        const metaObj = meta.reduce((acc: any, m: any) => {
           acc[m.meta_key] = m.meta_value;
           return acc;
         }, {});
@@ -339,13 +441,11 @@ async function startServer() {
 
   app.get("/api/posts/:id", async (req, res) => {
     try {
-      const postResult = await pool.query("SELECT * FROM posts WHERE id = $1", [req.params.id]);
-      const post = postResult.rows[0];
-      
+      const post = await queryOne("SELECT * FROM posts WHERE id = $1", [req.params.id]);
       if (!post) return res.status(404).json({ error: "Post not found" });
 
-      const metaResult = await pool.query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
-      const metaObj = metaResult.rows.reduce((acc: any, m: any) => {
+      const meta = await query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
+      const metaObj = meta.reduce((acc: any, m: any) => {
         acc[m.meta_key] = m.meta_value;
         return acc;
       }, {});
@@ -357,11 +457,180 @@ async function startServer() {
     }
   });
 
+  // Experience Routes
+  app.get("/api/experience", async (req, res) => {
+    try {
+      const experience = await query("SELECT * FROM experience ORDER BY sort_order ASC, id DESC");
+      res.json(experience);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch experience" });
+    }
+  });
+
+  app.post("/api/experience", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { company, role, period, description, sort_order } = req.body;
+    try {
+      if (isPostgres) {
+        const result = await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING id", [company, role, period, description, sort_order || 0]);
+        res.json({ id: result[0].id, message: "Experience added" });
+      } else {
+        const result = await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [company, role, period, description, sort_order || 0]);
+        res.json({ id: result.lastInsertRowid, message: "Experience added" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add experience" });
+    }
+  });
+
+  app.put("/api/experience/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    const { company, role, period, description, sort_order } = req.body;
+    try {
+      await query("UPDATE experience SET company = $1, role = $2, period = $3, description = $4, sort_order = $5 WHERE id = $6", [company, role, period, description, sort_order || 0, id]);
+      res.json({ message: "Experience updated" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update experience" });
+    }
+  });
+
+  app.delete("/api/experience/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      await query("DELETE FROM experience WHERE id = $1", [id]);
+      res.json({ message: "Experience deleted" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete experience" });
+    }
+  });
+
+  // Skills Routes
+  app.get("/api/skills", async (req, res) => {
+    try {
+      const skills = await query("SELECT * FROM skills ORDER BY category, sort_order ASC");
+      res.json(skills);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch skills" });
+    }
+  });
+
+  app.post("/api/skills", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { category, name, sort_order } = req.body;
+    try {
+      if (isPostgres) {
+        const result = await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3) RETURNING id", [category, name, sort_order || 0]);
+        res.json({ id: result[0].id, message: "Skill added" });
+      } else {
+        const result = await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [category, name, sort_order || 0]);
+        res.json({ id: result.lastInsertRowid, message: "Skill added" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add skill" });
+    }
+  });
+
+  app.put("/api/skills/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    const { category, name, sort_order } = req.body;
+    try {
+      await query("UPDATE skills SET category = $1, name = $2, sort_order = $3 WHERE id = $4", [category, name, sort_order || 0, id]);
+      res.json({ message: "Skill updated" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update skill" });
+    }
+  });
+
+  app.delete("/api/skills/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      await query("DELETE FROM skills WHERE id = $1", [id]);
+      res.json({ message: "Skill deleted" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete skill" });
+    }
+  });
+
+  // Contact Messages Routes
+  app.post("/api/contact", async (req, res) => {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "Name, email and message are required" });
+    }
+    try {
+      if (isPostgres) {
+        await query("INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)", [name, email, subject || "No Subject", message]);
+      } else {
+        await query("INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)", [name, email, subject || "No Subject", message]);
+      }
+      res.json({ message: "Message sent successfully! I will get back to you soon." });
+    } catch (error) {
+      console.error("Contact error:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.get("/api/messages", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const messages = await query("SELECT * FROM messages ORDER BY created_at DESC");
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.put("/api/messages/:id/read", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      await query("UPDATE messages SET status = 'read' WHERE id = $1", [id]);
+      res.json({ message: "Message marked as read" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update message" });
+    }
+  });
+
+  app.delete("/api/messages/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      await query("DELETE FROM messages WHERE id = $1", [id]);
+      res.json({ message: "Message deleted" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Resume Download Route
+  app.get("/api/resume/download", (req, res) => {
+    // In a real app, this would serve the actual PDF file
+    // For now, we'll provide a placeholder or redirect to a public asset if it exists
+    const resumePath = path.join(__dirname, "public", "resume.pdf");
+    // Check if file exists, if not send a friendly message
+    res.setHeader('Content-Disposition', 'attachment; filename=Wondwosen_Endale_Resume.pdf');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send("This is a placeholder for the resume PDF. Please upload your actual resume.pdf to the public folder.");
+  });
+
   // Stats for the dashboard
   app.get("/api/stats", async (req, res) => {
     try {
-      const logsResult = await pool.query("SELECT endpoint, COUNT(*) as views FROM api_logs GROUP BY endpoint ORDER BY views DESC LIMIT 5");
-      res.json(logsResult.rows || []);
+      const logs = await query("SELECT endpoint, COUNT(*) as views FROM api_logs GROUP BY endpoint ORDER BY views DESC LIMIT 5");
+      res.json(logs || []);
     } catch (error) {
       console.error("Stats error:", error);
       res.status(500).json({ error: "Failed to fetch stats" });
@@ -397,12 +666,9 @@ async function startServer() {
     });
   }
 
-  // Initialize DB before listening
-  await initDb();
-
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`DevPulse Server running on http://localhost:${PORT}`);
   });
 }
 
-startServer().catch(console.dir);
+startServer();
