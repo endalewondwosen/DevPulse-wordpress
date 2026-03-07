@@ -434,6 +434,9 @@ async function startServer() {
 
       const posts = await query(queryText, params);
       
+      console.log(`Found ${posts.length} posts`);
+      console.log("Posts with image_urls:", posts.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
+      
       const postsWithMeta = await Promise.all(posts.map(async (post: any) => {
         const meta = await query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
         const metaObj = meta.reduce((acc: any, m: any) => {
