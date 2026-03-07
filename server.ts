@@ -358,11 +358,14 @@ async function startServer() {
     const { title, content, type, status, image_url, meta } = req.body;
 
     try {
-      const result = await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5 WHERE id = $6", [title, content || "", type, status || "publish", image_url || null, id]);
-
-      if (!isPostgres && result.changes === 0) {
+      // First check if post exists
+      const existingPost = await queryOne("SELECT id FROM posts WHERE id = $1", [id]);
+      if (!existingPost) {
         return res.status(404).json({ error: "Post not found" });
       }
+
+      // Update the post
+      await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5 WHERE id = $6", [title, content || "", type, status || "publish", image_url || null, id]);
 
       // Update meta: delete old and insert new
       await query("DELETE FROM post_meta WHERE post_id = $1", [id]);
