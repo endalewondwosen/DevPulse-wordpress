@@ -7,7 +7,7 @@
     "dev": "tsx server.ts",
     "start": "node server.js",
     "build": "vite build && npm run build:server",
-    "build:server": "tsc server.ts --outDir . --target es2022 --module commonjs --skipLibCheck",
+    "build:server": "tsc server.ts --outDir . --target es2022 --module commonjs --esModuleInterop --skipLibCheck",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
