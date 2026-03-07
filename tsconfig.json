@@ -23,6 +23,6 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": false
+    "noEmit": true
   }
 }
