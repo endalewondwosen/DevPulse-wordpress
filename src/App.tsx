@@ -160,33 +160,32 @@ export default function App() {
     try {
       const headers: any = {};
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
       }
 
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-
-      const [projRes, snipRes, expRes, skillRes, statRes, msgRes] = await Promise.all([
-        fetch(`/api/posts?type=project${searchParam}`, { headers }),
-        fetch(`/api/posts?type=snippet${searchParam}`, { headers }),
-        fetch('/api/experience'),
-        fetch('/api/skills'),
-        fetch('/api/stats'),
-        token ? fetch('/api/messages', { headers }) : Promise.resolve(null)
+      const [projRes, snipRes, expRes, skillRes, statsRes, msgRes] = await Promise.all([
+        fetch('/api/posts?type=project', { headers }),
+        fetch('/api/posts?type=snippet', { headers }),
+        fetch('/api/experience', { headers }),
+        fetch('/api/skills', { headers }),
+        fetch('/api/stats', { headers }),
+        token ? fetch('/api/messages', { headers }) : Promise.resolve({ ok: true, json: () => [] })
       ]);
-      
+
       const [projData, snipData, expData, skillData, statData, msgData] = await Promise.all([
-        processResponse(projRes),
-        processResponse(snipRes),
-        processResponse(expRes),
-        processResponse(skillRes),
-        processResponse(statRes),
+        projRes ? processResponse(projRes) : Promise.resolve([]),
+        snipRes ? processResponse(snipRes) : Promise.resolve([]),
+        expRes ? processResponse(expRes) : Promise.resolve([]),
+        skillRes ? processResponse(skillRes) : Promise.resolve([]),
+        statsRes ? processResponse(statsRes) : Promise.resolve([]),
         msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
 
-      setProjects(projData);
-      setSnippets(snipData);
-      setExperience(expData);
-      setSkills(skillData);
+      // Force state update with new array reference
+      setProjects([...projData]);
+      setSnippets([...snipData]);
+      setExperience([...expData]);
+      setSkills([...skillData]);
       setStats(statData);
       setMessages(msgData);
     } catch (error: any) {
