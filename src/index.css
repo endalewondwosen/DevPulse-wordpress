@@ -3,11 +3,40 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Redefine zinc colors to be theme-aware */
+  --color-zinc-950: var(--bg-main);
+  --color-zinc-900: var(--bg-card);
+  --color-zinc-800: var(--border-main);
+  --color-zinc-700: var(--border-muted);
+  --color-zinc-100: var(--text-main);
+  --color-zinc-400: var(--text-muted);
+  --color-zinc-500: var(--text-muted-more);
+}
+
+:root {
+  --bg-main: #ffffff;
+  --bg-card: #f9f9fb;
+  --border-main: #e4e4e7;
+  --border-muted: #f4f4f5;
+  --text-main: #09090b;
+  --text-muted: #52525b;
+  --text-muted-more: #71717a;
+}
+
+.dark {
+  --bg-main: #0A0A0B;
+  --bg-card: #151516;
+  --border-main: #27272a;
+  --border-muted: #3f3f46;
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --text-muted-more: #71717a;
 }
 
 @layer base {
   body {
-    @apply bg-[#0A0A0B] text-zinc-100 antialiased;
+    @apply bg-zinc-950 text-zinc-100 antialiased transition-colors duration-300;
   }
 }
 

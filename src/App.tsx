@@ -35,8 +35,8 @@ import {
   Inbox,
   Layers,
   Upload,
-  Download,
-  FileText
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -91,6 +91,12 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('devpulse_theme') as 'light' | 'dark' || 'dark';
+    }
+    return 'dark';
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   // Experience & Skills Management State
@@ -121,6 +127,15 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  useEffect(() => {
+    localStorage.setItem('devpulse_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -160,32 +175,33 @@ export default function App() {
     try {
       const headers: any = {};
       if (token) {
-        headers.Authorization = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const [projRes, snipRes, expRes, skillRes, statsRes, msgRes] = await Promise.all([
-        fetch('/api/posts?type=project', { headers }),
-        fetch('/api/posts?type=snippet', { headers }),
-        fetch('/api/experience', { headers }),
-        fetch('/api/skills', { headers }),
-        fetch('/api/stats', { headers }),
-        token ? fetch('/api/messages', { headers }) : Promise.resolve({ ok: true, json: () => [] })
-      ]);
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
+      const [projRes, snipRes, expRes, skillRes, statRes, msgRes] = await Promise.all([
+        fetch(`/api/posts?type=project${searchParam}`, { headers }),
+        fetch(`/api/posts?type=snippet${searchParam}`, { headers }),
+        fetch('/api/experience'),
+        fetch('/api/skills'),
+        fetch('/api/stats'),
+        token ? fetch('/api/messages', { headers }) : Promise.resolve(null)
+      ]);
+      
       const [projData, snipData, expData, skillData, statData, msgData] = await Promise.all([
-        projRes ? processResponse(projRes, 'projects') : Promise.resolve([]),
-        snipRes ? processResponse(snipRes, 'snippets') : Promise.resolve([]),
-        expRes ? processResponse(expRes, 'experience') : Promise.resolve([]),
-        skillRes ? processResponse(skillRes, 'skills') : Promise.resolve([]),
-        statsRes ? processResponse(statsRes, 'stats') : Promise.resolve([]),
-        msgRes ? processResponse(msgRes, 'messages') : Promise.resolve([])
+        processResponse(projRes),
+        processResponse(snipRes),
+        processResponse(expRes),
+        processResponse(skillRes),
+        processResponse(statRes),
+        msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
 
-      // Force state update with new array reference
-      setProjects([...projData]);
-      setSnippets([...snipData]);
-      setExperience([...expData]);
-      setSkills([...skillData]);
+      setProjects(projData);
+      setSnippets(snipData);
+      setExperience(expData);
+      setSkills(skillData);
       setStats(statData);
       setMessages(msgData);
     } catch (error: any) {
@@ -199,12 +215,7 @@ export default function App() {
     }
   };
 
-  const processResponse = async (res: Response | null, apiName?: string) => {
-    if (!res || !res.headers) {
-      console.warn(`Null or invalid response received from ${apiName || 'unknown API'}`);
-      return [];
-    }
-    
+  const processResponse = async (res: Response) => {
     const contentType = res.headers.get("content-type");
     
     if (res.status === 401 || res.status === 403) {
@@ -620,7 +631,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500/30">
       {/* Navigation */}
       <nav className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -677,6 +688,14 @@ export default function App() {
             )}
             
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
+
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
             {token ? (
               <button 
@@ -923,35 +942,6 @@ export default function App() {
                       Full Stack Developer with 2 years of experience building scalable web applications using React and Next.js. 
                       Optimizing Core Web Vitals and driving front-end architecture decisions.
                     </p>
-                    
-                    {/* CV Viewer Section */}
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
-                      <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        My CV / Resume
-                      </h3>
-                      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                        <iframe
-                          src="/uploads/CV_2026030616595052.pdf"
-                          className="w-full h-[600px] border-0"
-                          title="My CV PDF"
-                        />
-                        <div className="p-4 bg-zinc-50">
-                          <p className="text-sm text-zinc-600 mb-4">
-                            Download my full CV to learn more about my experience and qualifications.
-                          </p>
-                          <a 
-                            href="/uploads/CV_2026030616595052.pdf"
-                            download="CV_2026030616595052.pdf"
-                            className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download CV
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => setActiveTab('projects')}
@@ -961,8 +951,8 @@ export default function App() {
                         <ChevronRight className="w-4 h-4" />
                       </button>
                       <a 
-                        href="/uploads/CV_2026030616595052.pdf"
-                        download="CV_2026030616595052.pdf"
+                        href="/api/resume/download"
+                        download
                         className="bg-zinc-800 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-700 transition-all border border-zinc-700 flex items-center gap-2"
                       >
                         Download Resume
@@ -1349,12 +1339,17 @@ export default function App() {
                             </h4>
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={stats}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="endpoint" stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#333' : '#e4e4e7'} vertical={false} />
+                                <XAxis dataKey="endpoint" stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
                                 <Tooltip 
-                                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px' }}
+                                  cursor={{ fill: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
+                                  contentStyle={{ 
+                                    backgroundColor: theme === 'dark' ? '#151516' : '#ffffff', 
+                                    border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`, 
+                                    borderRadius: '12px',
+                                    color: theme === 'dark' ? '#f4f4f5' : '#09090b'
+                                  }}
                                   itemStyle={{ color: '#10b981' }}
                                 />
                                 <Bar dataKey="views" fill="#10b981" radius={[6, 6, 0, 0]} barSize={30} />
@@ -1388,7 +1383,12 @@ export default function App() {
                                   <Cell fill="#8b5cf6" />
                                 </Pie>
                                 <Tooltip 
-                                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px' }}
+                                  contentStyle={{ 
+                                    backgroundColor: theme === 'dark' ? '#151516' : '#ffffff', 
+                                    border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`, 
+                                    borderRadius: '12px',
+                                    color: theme === 'dark' ? '#f4f4f5' : '#09090b'
+                                  }}
                                 />
                               </PieChart>
                             </ResponsiveContainer>
