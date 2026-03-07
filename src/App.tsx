@@ -35,8 +35,6 @@ import {
   Inbox,
   Layers,
   Upload,
-  Download,
-  FileText,
   Sun,
   Moon
 } from 'lucide-react';
@@ -647,7 +645,7 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
+            <span className="font-bold tracking-tight text-xl">DevPulse</span>
           </div>
           
           {/* Desktop Nav */}
@@ -944,35 +942,6 @@ export default function App() {
                       Full Stack Developer with 2 years of experience building scalable web applications using React and Next.js. 
                       Optimizing Core Web Vitals and driving front-end architecture decisions.
                     </p>
-                    
-                    {/* CV Viewer Section */}
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
-                      <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        My CV / Resume
-                      </h3>
-                      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                        <iframe
-                          src="/resume.pdf"
-                          className="w-full h-[600px] border-0"
-                          title="My CV PDF"
-                        />
-                        <div className="p-4 bg-zinc-50">
-                          <p className="text-sm text-zinc-600 mb-4">
-                            Download my full CV to learn more about my experience and qualifications.
-                          </p>
-                          <a 
-                            href="/api/resume/download"
-                            download
-                            className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download CV
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => setActiveTab('projects')}
@@ -1036,11 +1005,12 @@ export default function App() {
               </section>
 
               {/* Skills Matrix */}
-              <section id="skills" className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <section id="skills" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[
                   { id: 'frontend', title: 'Frontend Engineering', icon: <Layout className="w-6 h-6 text-emerald-500" />, color: 'emerald', desc: 'Crafting immersive, accessible user experiences with modern web technologies.' },
                   { id: 'backend', title: 'Backend & Systems', icon: <Cpu className="w-6 h-6 text-blue-500" />, color: 'blue', desc: 'Designing robust APIs and microservices using scalable backend patterns.' },
-                  { id: 'devops', title: 'DevOps & Cloud', icon: <Terminal className="w-6 h-6 text-purple-500" />, color: 'purple', desc: 'Automating deployment pipelines and managing cloud infrastructure.' }
+                  { id: 'devops', title: 'DevOps & Cloud', icon: <Terminal className="w-6 h-6 text-purple-500" />, color: 'purple', desc: 'Automating deployment pipelines and managing cloud infrastructure.' },
+                  { id: 'additional', title: 'Additional Tech', icon: <Sparkles className="w-6 h-6 text-amber-500" />, color: 'amber', desc: 'Exploring emerging technologies and specialized tools for modern development.' }
                 ].map((cat) => (
                   <div key={cat.id} className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl">
                     <div className={`w-12 h-12 bg-${cat.color}-500/10 rounded-2xl flex items-center justify-center mb-6`}>
@@ -1694,6 +1664,7 @@ export default function App() {
                               <option value="frontend">Frontend</option>
                               <option value="backend">Backend</option>
                               <option value="devops">DevOps</option>
+                              <option value="additional">Additional</option>
                             </select>
                             <input required type="text" value={newSkill.name} onChange={(e) => setNewSkill({...newSkill, name: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Skill Name" />
                             <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">

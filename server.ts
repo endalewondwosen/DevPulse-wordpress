@@ -1,5 +1,4 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -190,21 +189,51 @@ async function initDb() {
       1
     ]);
 
-    // Seed Skills
-    const skills = [
-      { cat: "frontend", name: "React JS / Next JS", order: 1 },
-      { cat: "frontend", name: "TypeScript", order: 2 },
-      { cat: "frontend", name: "Tailwind CSS", order: 3 },
-      { cat: "backend", name: "Node.js / Express", order: 1 },
-      { cat: "backend", name: "Nest JS", order: 2 },
-      { cat: "backend", name: "Laravel / PHP", order: 3 },
-      { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
-      { cat: "devops", name: "MongoDB", order: 2 },
-      { cat: "devops", name: "Docker", order: 3 }
+    // Seed Skills if empty
+    const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
+    const skillCount = parseInt(skillCountRes.count);
+
+    if (skillCount === 0) {
+      const skills = [
+        { cat: "frontend", name: "React JS / Next JS", order: 1 },
+        { cat: "frontend", name: "TypeScript", order: 2 },
+        { cat: "frontend", name: "Tailwind CSS", order: 3 },
+        { cat: "frontend", name: "Redux / Zustand", order: 4 },
+        { cat: "backend", name: "Node.js / Express", order: 1 },
+        { cat: "backend", name: "Nest JS", order: 2 },
+        { cat: "backend", name: "Laravel / PHP", order: 3 },
+        { cat: "backend", name: "Prisma ORM", order: 4 },
+        { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
+        { cat: "devops", name: "MongoDB", order: 2 },
+        { cat: "devops", name: "Docker / Git", order: 3 },
+        { cat: "additional", name: "AI Prompt Engineering", order: 1 },
+        { cat: "additional", name: "System Design", order: 2 },
+        { cat: "additional", name: "Microservices", order: 3 }
+      ];
+
+      for (const s of skills) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+      }
+    }
+
+    // Ensure specific requested skills exist
+    const requestedSkills = [
+      { cat: "frontend", name: "Redux" },
+      { cat: "frontend", name: "Zustand" },
+      { cat: "backend", name: "Prisma" },
+      { cat: "devops", name: "PostgreSQL" },
+      { cat: "devops", name: "MySQL" },
+      { cat: "devops", name: "MongoDB" },
+      { cat: "devops", name: "Docker" },
+      { cat: "devops", name: "Git" },
+      { cat: "additional", name: "AI Prompt Engineering" }
     ];
 
-    for (const s of skills) {
-      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+    for (const s of requestedSkills) {
+      const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
+      if (!exists) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+      }
     }
   }
 }
