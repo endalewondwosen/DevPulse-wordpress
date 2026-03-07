@@ -173,12 +173,12 @@ export default function App() {
       ]);
 
       const [projData, snipData, expData, skillData, statData, msgData] = await Promise.all([
-        projRes ? processResponse(projRes) : Promise.resolve([]),
-        snipRes ? processResponse(snipRes) : Promise.resolve([]),
-        expRes ? processResponse(expRes) : Promise.resolve([]),
-        skillRes ? processResponse(skillRes) : Promise.resolve([]),
-        statsRes ? processResponse(statsRes) : Promise.resolve([]),
-        msgRes ? processResponse(msgRes) : Promise.resolve([])
+        projRes ? processResponse(projRes, 'projects') : Promise.resolve([]),
+        snipRes ? processResponse(snipRes, 'snippets') : Promise.resolve([]),
+        expRes ? processResponse(expRes, 'experience') : Promise.resolve([]),
+        skillRes ? processResponse(skillRes, 'skills') : Promise.resolve([]),
+        statsRes ? processResponse(statsRes, 'stats') : Promise.resolve([]),
+        msgRes ? processResponse(msgRes, 'messages') : Promise.resolve([])
       ]);
 
       // Force state update with new array reference
@@ -199,9 +199,9 @@ export default function App() {
     }
   };
 
-  const processResponse = async (res: Response | null) => {
-    if (!res) {
-      console.warn("Null response received");
+  const processResponse = async (res: Response | null, apiName?: string) => {
+    if (!res || !res.headers) {
+      console.warn(`Null or invalid response received from ${apiName || 'unknown API'}`);
       return [];
     }
     
