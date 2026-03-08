@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from 'cloudinary';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const JWT_SECRET = "devpulse-secret-key-123";
 
 // Cloudinary Configuration
-cloudinary.config({ 
+(cloudinary as any).config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
   api_key: process.env.CLOUDINARY_API_KEY || 'demo',
   api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
@@ -385,7 +385,7 @@ async function startServer() {
       
       if (process.env.NODE_ENV === "production") {
         // Upload to Cloudinary in production
-        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        const result = await (cloudinary as any).uploader.upload(req.file.path, {
           folder: 'portfolio-projects',
           resource_type: 'image',
           transformation: [
