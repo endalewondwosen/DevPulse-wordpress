@@ -15,3 +15,7 @@ setup-neon.ps1
 
 # Uploads
 public/uploads/
+public/
+
+# Keep essential files
+!public/.gitkeep
