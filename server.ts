@@ -8,11 +8,19 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = "devpulse-secret-key-123";
+
+// Cloudinary Configuration
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+});
 
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
@@ -364,7 +372,7 @@ async function startServer() {
   });
 
   // File Upload Route (Authenticated)
-  app.post("/api/upload", authenticateToken, upload.single('image'), (req, res) => {
+  app.post("/api/upload", authenticateToken, upload.single('image'), async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
@@ -372,8 +380,29 @@ async function startServer() {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl });
+    try {
+      let imageUrl;
+      
+      if (process.env.NODE_ENV === "production") {
+        // Upload to Cloudinary in production
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: 'portfolio-projects',
+          resource_type: 'image',
+          transformation: [
+            { width: 800, height: 450, crop: 'fill' }
+          ]
+        });
+        imageUrl = result.secure_url;
+      } else {
+        // Local development - save to uploads folder
+        imageUrl = `/uploads/${req.file.filename}`;
+      }
+      
+      res.json({ url: imageUrl });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
   });
 
   // Create Post Route (Authenticated)
