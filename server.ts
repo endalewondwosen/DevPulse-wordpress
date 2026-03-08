@@ -7,10 +7,6 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
-import dotenv from "dotenv";
-
-// Load environment variables
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,7 +75,20 @@ async function initDb() {
       image_url TEXT,
       created_at TIMESTAMP DEFAULT ${timestampDefault}
     );
+  `);
 
+  // Migration for image_url
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS image_url TEXT`);
+    } else {
+      await exec(`ALTER TABLE posts ADD COLUMN image_url TEXT`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
+  await exec(`
     CREATE TABLE IF NOT EXISTS post_meta (
       id ${idType},
       post_id INTEGER,
@@ -357,19 +366,12 @@ async function startServer() {
     const { id } = req.params;
     const { title, content, type, status, image_url, meta } = req.body;
 
-    console.log("Updating post:", { id, title, content, type, status, image_url });
-
     try {
-      // First check if post exists
-      const existingPost = await queryOne("SELECT id FROM posts WHERE id = $1", [id]);
-      if (!existingPost) {
+      const result = await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5 WHERE id = $6", [title, content || "", type, status || "publish", image_url || null, id]);
+
+      if (!isPostgres && result.changes === 0) {
         return res.status(404).json({ error: "Post not found" });
       }
-
-      // Update the post
-      await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5 WHERE id = $6", [title, content || "", type, status || "publish", image_url || null, id]);
-      
-      console.log("Post updated successfully with image_url:", image_url);
 
       // Update meta: delete old and insert new
       await query("DELETE FROM post_meta WHERE post_id = $1", [id]);
@@ -433,9 +435,6 @@ async function startServer() {
       }
 
       const posts = await query(queryText, params);
-      
-      console.log(`Found ${posts.length} posts`);
-      console.log("Posts with image_urls:", posts.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
       
       const postsWithMeta = await Promise.all(posts.map(async (post: any) => {
         const meta = await query("SELECT meta_key, meta_value FROM post_meta WHERE post_id = $1", [post.id]);
@@ -675,7 +674,6 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, "dist")));
-    app.use('/uploads', express.static(path.join(__dirname, "public", "uploads")));
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
