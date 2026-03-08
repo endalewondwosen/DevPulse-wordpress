@@ -36,7 +36,9 @@ import {
   Layers,
   Upload,
   Download,
-  FileText
+  FileText,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -91,6 +93,12 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('devpulse_theme') as 'light' | 'dark' || 'dark';
+    }
+    return 'dark';
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   // Experience & Skills Management State
@@ -121,6 +129,15 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  useEffect(() => {
+    localStorage.setItem('devpulse_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -169,7 +186,7 @@ export default function App() {
         fetch('/api/experience', { headers }),
         fetch('/api/skills', { headers }),
         fetch('/api/stats', { headers }),
-        token ? fetch('/api/messages', { headers }) : Promise.resolve({ ok: true, json: () => [] })
+        token ? fetch('/api/messages', { headers }) : Promise.resolve(new Response(JSON.stringify([]), { status: 200, statusText: 'OK', headers: { 'Content-Type': 'application/json' } }))
       ]);
 
       const [projData, snipData, expData, skillData, statData, msgData] = await Promise.all([
@@ -677,6 +694,14 @@ export default function App() {
             )}
             
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
+
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
             {token ? (
               <button 
