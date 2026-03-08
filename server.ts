@@ -1,5 +1,4 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -130,6 +129,15 @@ async function initDb() {
       status TEXT DEFAULT 'unread',
       created_at TIMESTAMP DEFAULT ${timestampDefault}
     );
+
+    CREATE TABLE IF NOT EXISTS certifications (
+      id ${idType},
+      name TEXT NOT NULL,
+      issuer TEXT NOT NULL,
+      date TEXT NOT NULL,
+      url TEXT,
+      sort_order INTEGER DEFAULT 0
+    );
   `);
 
   // Seed data if empty
@@ -234,6 +242,20 @@ async function initDb() {
       const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
       if (!exists) {
         await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+      }
+    }
+
+    // Seed Certifications if empty
+    const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
+    const certCount = parseInt(certCountRes.count);
+    if (certCount === 0) {
+      const certs = [
+        { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
+        { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
+        { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
+      ];
+      for (const c of certs) {
+        await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
       }
     }
   }
@@ -602,6 +624,58 @@ async function startServer() {
       res.json({ message: "Skill deleted" });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete skill" });
+    }
+  });
+
+  // Certifications Routes
+  app.get("/api/certifications", async (req, res) => {
+    try {
+      const certifications = await query("SELECT * FROM certifications ORDER BY sort_order ASC, id DESC");
+      res.json(certifications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch certifications" });
+    }
+  });
+
+  app.post("/api/certifications", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { name, issuer, date, url, sort_order } = req.body;
+    try {
+      if (isPostgres) {
+        const result = await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING id", [name, issuer, date, url, sort_order || 0]);
+        res.json({ id: result[0].id, message: "Certification added" });
+      } else {
+        const result = await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [name, issuer, date, url, sort_order || 0]);
+        res.json({ id: result.lastInsertRowid, message: "Certification added" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add certification" });
+    }
+  });
+
+  app.put("/api/certifications/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    const { name, issuer, date, url, sort_order } = req.body;
+    try {
+      await query("UPDATE certifications SET name = $1, issuer = $2, date = $3, url = $4, sort_order = $5 WHERE id = $6", [name, issuer, date, url, sort_order || 0, id]);
+      res.json({ message: "Certification updated" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update certification" });
+    }
+  });
+
+  app.delete("/api/certifications/:id", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { id } = req.params;
+    try {
+      await query("DELETE FROM certifications WHERE id = $1", [id]);
+      res.json({ message: "Certification deleted" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete certification" });
     }
   });
 

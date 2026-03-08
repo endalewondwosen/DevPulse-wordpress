@@ -21,6 +21,7 @@ import {
   Plus,
   Briefcase,
   Wrench,
+  Award,
   Mail,
   Send,
   CheckCircle2,
@@ -35,8 +36,6 @@ import {
   Inbox,
   Layers,
   Upload,
-  Download,
-  FileText,
   Sun,
   Moon
 } from 'lucide-react';
@@ -56,13 +55,14 @@ import Markdown from 'react-markdown';
 
 import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
-import { Post, Experience, Skill, Message, Stat } from './types';
+import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 export default function App() {
   const [projects, setProjects] = useState<Post[]>([]);
   const [snippets, setSnippets] = useState<Post[]>([]);
   const [experience, setExperience] = useState<Experience[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,9 +116,17 @@ export default function App() {
   });
   const [editingExpId, setEditingExpId] = useState<number | null>(null);
   const [editingSkillId, setEditingSkillId] = useState<number | null>(null);
+  const [newCertification, setNewCertification] = useState<Omit<Certification, 'id'>>({
+    name: '',
+    issuer: '',
+    date: '',
+    url: '',
+    sort_order: 0
+  });
+  const [editingCertId, setEditingCertId] = useState<number | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('about');
-  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'messages'>('overview');
+  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'messages'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -163,7 +171,7 @@ export default function App() {
       });
     }, options);
 
-    const sections = ['about', 'skills', 'experience', 'contact'];
+    const sections = ['about', 'skills', 'experience', 'certifications', 'contact'];
     sections.forEach((id) => {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
@@ -182,20 +190,22 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      const [projRes, snipRes, expRes, skillRes, statRes, msgRes] = await Promise.all([
+      const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
         fetch(`/api/posts?type=project${searchParam}`, { headers }),
         fetch(`/api/posts?type=snippet${searchParam}`, { headers }),
         fetch('/api/experience'),
         fetch('/api/skills'),
+        fetch('/api/certifications'),
         fetch('/api/stats'),
         token ? fetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
       
-      const [projData, snipData, expData, skillData, statData, msgData] = await Promise.all([
+      const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
         processResponse(expRes),
         processResponse(skillRes),
+        processResponse(certRes),
         processResponse(statRes),
         msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
@@ -204,6 +214,7 @@ export default function App() {
       setSnippets(snipData);
       setExperience(expData);
       setSkills(skillData);
+      setCertifications(certData);
       setStats(statData);
       setMessages(msgData);
     } catch (error: any) {
@@ -440,6 +451,51 @@ export default function App() {
     }
   };
 
+  // Certifications Handlers
+  const handleCreateCertification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSubmitting(true);
+    try {
+      const url = editingCertId ? `/api/certifications/${editingCertId}` : '/api/certifications';
+      const method = editingCertId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newCertification)
+      });
+      await processResponse(res);
+      setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
+      setEditingCertId(null);
+      fetchData();
+      setNotification({ message: editingCertId ? "Certification updated" : "Certification added", type: 'success' });
+    } catch (error: any) {
+      console.error("Error saving certification:", error);
+      setNotification({ message: error.message || "Failed to save certification", type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCertification = async (id: number) => {
+    if (!token || !window.confirm('Delete this certification?')) return;
+    try {
+      const res = await fetch(`/api/certifications/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      await processResponse(res);
+      fetchData();
+      setNotification({ message: "Certification deleted", type: 'success' });
+    } catch (error: any) {
+      console.error("Error deleting certification:", error);
+      setNotification({ message: error.message || "Failed to delete certification", type: 'error' });
+    }
+  };
+
   // Contact Handlers
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -647,7 +703,7 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
+            <span className="font-bold tracking-tight text-xl">DevPulse</span>
           </div>
           
           {/* Desktop Nav */}
@@ -944,35 +1000,6 @@ export default function App() {
                       Full Stack Developer with 2 years of experience building scalable web applications using React and Next.js. 
                       Optimizing Core Web Vitals and driving front-end architecture decisions.
                     </p>
-                    
-                    {/* CV Viewer Section */}
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
-                      <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        My CV / Resume
-                      </h3>
-                      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                        <iframe
-                          src="/resume.pdf"
-                          className="w-full h-[600px] border-0"
-                          title="My CV PDF"
-                        />
-                        <div className="p-4 bg-zinc-50">
-                          <p className="text-sm text-zinc-600 mb-4">
-                            Download my full CV to learn more about my experience and qualifications.
-                          </p>
-                          <a 
-                            href="/api/resume/download"
-                            download
-                            className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download CV
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => setActiveTab('projects')}
@@ -1082,6 +1109,42 @@ export default function App() {
                         </div>
                         <p className="text-emerald-500 font-medium text-sm mb-2">{exp.company}</p>
                         <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">{exp.description}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              {/* Certifications & Expertise */}
+              <section id="certifications" className="space-y-12">
+                <div className="flex items-center gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Certifications & Expertise</h2>
+                  <div className="h-px flex-1 bg-zinc-800" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {certifications.length === 0 ? (
+                    <p className="text-zinc-500 italic col-span-full">Certifications will appear here once added in admin.</p>
+                  ) : (
+                    certifications.map((cert) => (
+                      <div key={cert.id} className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl hover:border-emerald-500/50 transition-all group">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-black transition-all">
+                            <Award className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cert.date}</span>
+                        </div>
+                        <h4 className="text-lg font-bold mb-1 group-hover:text-emerald-500 transition-colors">{cert.name}</h4>
+                        <p className="text-zinc-500 text-sm mb-4">{cert.issuer}</p>
+                        {cert.url && cert.url !== '#' && (
+                          <a 
+                            href={cert.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors"
+                          >
+                            View Certificate <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
                     ))
                   )}
@@ -1273,6 +1336,7 @@ export default function App() {
                       { id: 'snippets', name: 'Snippets', icon: Terminal },
                       { id: 'experience', name: 'Experience', icon: Briefcase },
                       { id: 'skills', name: 'Skills', icon: Wrench },
+                      { id: 'certifications', name: 'Certifications', icon: Award },
                       { id: 'messages', name: 'Inbox', icon: Inbox },
                     ].map((item) => (
                       <button
@@ -1316,20 +1380,23 @@ export default function App() {
                           {adminModule === 'snippets' && <Terminal className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'experience' && <Briefcase className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'skills' && <Wrench className="w-6 h-6 text-emerald-500" />}
+                          {adminModule === 'certifications' && <Award className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'messages' && <Inbox className="w-6 h-6 text-emerald-500" />}
                           {adminModule}
                         </h2>
                         
-                        {['projects', 'snippets', 'experience', 'skills'].includes(adminModule) && (
+                        {['projects', 'snippets', 'experience', 'skills', 'certifications'].includes(adminModule) && (
                           <button 
                             onClick={() => {
                               setEditingId(null);
                               setEditingExpId(null);
                               setEditingSkillId(null);
+                              setEditingCertId(null);
                               // Reset forms
                               setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '' } });
                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
+                              setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
                             }}
                             className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-black px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2"
                           >
@@ -1727,6 +1794,62 @@ export default function App() {
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button onClick={() => { setEditingSkillId(skill.id); setNewSkill(skill); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => handleDeleteSkill(skill.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certifications Module */}
+                    {adminModule === 'certifications' && (
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                            {editingCertId ? 'Edit Certification' : 'Add New'}
+                          </h3>
+                          <form onSubmit={handleCreateCertification} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <input required type="text" value={newCertification.name} onChange={(e) => setNewCertification({...newCertification, name: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert Name" />
+                              <input required type="text" value={newCertification.issuer} onChange={(e) => setNewCertification({...newCertification, issuer: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Issuer" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <input required type="text" value={newCertification.date} onChange={(e) => setNewCertification({...newCertification, date: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Date (e.g. 2024)" />
+                              <input type="text" value={newCertification.url || ''} onChange={(e) => setNewCertification({...newCertification, url: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert URL (optional)" />
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingCertId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                              {editingCertId ? 'Update' : 'Add Certification'}
+                            </button>
+                          </form>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Certifications List</h3>
+                            <input 
+                              type="text"
+                              placeholder="Search..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                            />
+                          </div>
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                            {certifications
+                              .filter(cert => cert.name.toLowerCase().includes(searchTerm.toLowerCase()) || cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()))
+                              .map(cert => (
+                              <div key={cert.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                <div className="flex items-center gap-3 flex-1 mr-4">
+                                  <Award className="w-4 h-4 text-emerald-500" />
+                                  <div className="truncate">
+                                    <h4 className="text-sm font-bold truncate">{cert.name}</h4>
+                                    <p className="text-[10px] text-zinc-500">{cert.issuer} • {cert.date}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => { setEditingCertId(cert.id); setNewCertification(cert); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteCertification(cert.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             ))}

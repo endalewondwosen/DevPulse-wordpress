@@ -44,3 +44,12 @@ export interface Stat {
   endpoint: string;
   views: number;
 }
+
+export interface Certification {
+  id: number;
+  name: string;
+  issuer: string;
+  date: string;
+  url?: string;
+  sort_order: number;
+}

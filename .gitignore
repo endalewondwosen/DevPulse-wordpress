@@ -14,10 +14,4 @@ setup-neon-simple.ps1
 setup-neon.ps1
 
 # Uploads
-# public/uploads/
-# public/
-# # Commented out temporarily for git push
-# public/
-
-# Keep essential files
-!public/.gitkeep
+public/uploads/
