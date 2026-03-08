@@ -36,6 +36,8 @@ import {
   Inbox,
   Layers,
   Upload,
+  Download,
+  FileText,
   Sun,
   Moon
 } from 'lucide-react';
@@ -1000,6 +1002,35 @@ export default function App() {
                       Full Stack Developer with 2 years of experience building scalable web applications using React and Next.js. 
                       Optimizing Core Web Vitals and driving front-end architecture decisions.
                     </p>
+                    
+                    {/* CV Viewer Section */}
+                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
+                      <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        My CV / Resume
+                      </h3>
+                      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                        <iframe
+                          src="/resume.pdf"
+                          className="w-full h-[600px] border-0"
+                          title="My CV PDF"
+                        />
+                        <div className="p-4 bg-zinc-50">
+                          <p className="text-sm text-zinc-600 mb-4">
+                            Download my full CV to learn more about my experience and qualifications.
+                          </p>
+                          <a 
+                            href="/api/resume/download"
+                            download
+                            className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download CV
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => setActiveTab('projects')}
