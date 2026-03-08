@@ -39,7 +39,9 @@ import {
   Download,
   FileText,
   Sun,
-  Moon
+  Moon,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -627,6 +629,28 @@ export default function App() {
     });
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleReorderProject = async (projectId: number, direction: 'up' | 'down') => {
+    try {
+      const res = await fetch(`/api/posts/${projectId}/reorder`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ id: projectId, direction })
+      });
+      
+      if (res.ok) {
+        fetchData(); // Refresh the projects list
+        setNotification({ message: "Project reordered successfully!", type: 'success' });
+      } else {
+        throw new Error('Failed to reorder project');
+      }
+    } catch (error: any) {
+      setNotification({ message: error.message || "Failed to reorder project", type: 'error' });
+    }
   };
 
   const cancelEditing = () => {
@@ -1720,6 +1744,8 @@ export default function App() {
                                   <p className="text-[10px] text-zinc-500">{post.status}</p>
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => handleReorderProject(post.id, 'up')} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><ChevronUp className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleReorderProject(post.id, 'down')} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><ChevronDown className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>

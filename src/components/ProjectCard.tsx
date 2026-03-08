@@ -3,7 +3,12 @@ import { motion } from 'motion/react';
 import { ExternalLink, Code2, Lock, Github, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 import { Post } from '../types';
 
-export const ProjectCard: React.FC<{ project: Post, onClick: () => void | Promise<void> }> = ({ project, onClick }) => {
+export interface ProjectCardProps {
+  project: Post;
+  onClick: () => void | Promise<void>;
+}
+
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   return (
     <motion.div 
       layoutId={`project-${project.id}`}
@@ -27,17 +32,6 @@ export const ProjectCard: React.FC<{ project: Post, onClick: () => void | Promis
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-60" />
         
-        <div className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-          <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400">
-              <ChevronUp className="w-3.5 h-3.5" />
-            </button>
-            <button className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400">
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
         {project.status === 'private' && (
           <div className="absolute top-4 left-4 flex items-center gap-1 text-[10px] font-bold bg-black/60 backdrop-blur-md text-amber-500 px-2 py-1 rounded-lg border border-amber-500/30">
             <Lock className="w-2.5 h-2.5" />
