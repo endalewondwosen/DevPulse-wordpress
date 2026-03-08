@@ -779,11 +779,48 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    app.use(express.static(path.join(__dirname, "public"))); // Serve entire public folder
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
+
+  // Reorder Post Route (Authenticated)
+  app.put("/api/posts/:id/reorder", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    
+    const { id, direction } = req.body; // direction: "up" or "down"
+    
+    try {
+      // Get current post and its type
+      const currentPost = await queryOne("SELECT sort_order, type FROM posts WHERE id = $1", [id]);
+      if (!currentPost) return res.status(404).json({ error: "Post not found" });
+      
+      // Get all posts of same type, ordered by sort_order
+      const postsInSameType = await query("SELECT id, sort_order FROM posts WHERE type = $1 ORDER BY sort_order", [currentPost.type]);
+      
+      // Find current index and calculate new position
+      const currentIndex = postsInSameType.findIndex(p => p.id === parseInt(id));
+      const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      
+      // Check bounds
+      if (newIndex < 0 || newIndex >= postsInSameType.length) {
+        return res.status(400).json({ error: `Cannot move ${direction}` });
+      }
+      
+      // Swap sort orders
+      const targetPost = postsInSameType[newIndex];
+      await query("UPDATE posts SET sort_order = $1 WHERE id = $2", [targetPost.sort_order, id]);
+      await query("UPDATE posts SET sort_order = $1 WHERE id = $2", [currentPost.sort_order, targetPost.id]);
+      
+      res.json({ success: true, message: `Post moved ${direction}` });
+    } catch (error) {
+      console.error("Reorder error:", error);
+      res.status(500).json({ error: "Failed to reorder post" });
+    }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`DevPulse Server running on http://localhost:${PORT}`);
