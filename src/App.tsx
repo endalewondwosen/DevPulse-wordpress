@@ -1023,8 +1023,9 @@ export default function App() {
                       Wondwosen <span className="text-emerald-500">Endale.</span>
                     </h1>
                     <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed mb-10">
-                      Full Stack Developer with 2 years of experience building scalable web applications using React and Next.js. 
-                      Optimizing Core Web Vitals and driving front-end architecture decisions.
+                      Full Stack Developer with 2 years of experience... seeking a role where I can apply my skills in building
+scalable AI-enhanced applications. Collaborative team player focused on delivering measurable
+business impact through high-quality, testable code.
                     </p>
                     
                     {/* CV Viewer Section */}
