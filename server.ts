@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -267,9 +268,39 @@ async function initDb() {
 async function startServer() {
   await initDb();
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+  const PUBLIC_SITE_URL =
+    process.env.PUBLIC_SITE_URL || "https://wondwosenportifolio.vercel.app";
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow non-browser tools (no Origin header)
+      if (!origin) return callback(null, true);
+
+      const allowList = new Set([
+        "https://devpulse-wordpress.onrender.com",
+        "https://wondwosenportifolio.vercel.app", // legacy typo domain (kept for compatibility)
+        "https://wondwosenportfolio.vercel.app",
+      ]);
+
+      if (allowList.has(origin)) return callback(null, true);
+
+      // Allow Vercel previews like https://<branch>-<project>.vercel.app
+      if (origin.endsWith(".vercel.app")) return callback(null, true);
+
+      return callback(new Error("CORS: origin not allowed"), false);
+    },
+    credentials: true,
+  }));
 
   app.use(express.json());
+
+  // If this service is used as an API backend (e.g. Render),
+  // redirect the public root/non-API pages to the main Vercel site.
+  if (process.env.NODE_ENV === "production") {
+    app.get("/", (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
+    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
+  }
 
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, "public", "uploads");

@@ -59,6 +59,17 @@ import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+const apiUrl = (p: string) => {
+  if (!API_BASE) return p;
+  const path = p.startsWith('/') ? p : `/${p}`;
+  return `${API_BASE}${path}`;
+};
+const apiFetch: typeof fetch = (input: any, init?: any) => {
+  if (typeof input === 'string') return fetch(apiUrl(input), init);
+  return fetch(input, init);
+};
+
 export default function App() {
   const [projects, setProjects] = useState<Post[]>([]);
   const [snippets, setSnippets] = useState<Post[]>([]);
@@ -193,13 +204,13 @@ export default function App() {
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
       const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
-        fetch(`/api/posts?type=project${searchParam}`, { headers }),
-        fetch(`/api/posts?type=snippet${searchParam}`, { headers }),
-        fetch('/api/experience'),
-        fetch('/api/skills'),
-        fetch('/api/certifications'),
-        fetch('/api/stats'),
-        token ? fetch('/api/messages', { headers }) : Promise.resolve(null)
+        apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
+        apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
+        apiFetch('/api/experience'),
+        apiFetch('/api/skills'),
+        apiFetch('/api/certifications'),
+        apiFetch('/api/stats'),
+        token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
       
       const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([
@@ -270,14 +281,14 @@ export default function App() {
 
   const handlePostClick = async (id: number) => {
     // Trigger the logging middleware on the server
-    await fetch(`/api/posts/${id}`);
+    await apiFetch(`/api/posts/${id}`);
     fetchData(); // Refresh stats
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login', {
+      const res = await apiFetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
@@ -312,7 +323,7 @@ export default function App() {
       const url = editingId ? `/api/posts/${editingId}` : '/api/posts';
       const method = editingId ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 
           'Content-Type': 'application/json',
@@ -349,7 +360,7 @@ export default function App() {
     if (!token || !window.confirm("Are you sure you want to delete this content? This action cannot be undone.")) return;
     
     try {
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await apiFetch(`/api/posts/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -371,7 +382,7 @@ export default function App() {
     try {
       const url = editingExpId ? `/api/experience/${editingExpId}` : '/api/experience';
       const method = editingExpId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 
           'Content-Type': 'application/json',
@@ -395,7 +406,7 @@ export default function App() {
   const handleDeleteExperience = async (id: number) => {
     if (!token || !window.confirm('Delete this experience entry?')) return;
     try {
-      const res = await fetch(`/api/experience/${id}`, {
+      const res = await apiFetch(`/api/experience/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -416,7 +427,7 @@ export default function App() {
     try {
       const url = editingSkillId ? `/api/skills/${editingSkillId}` : '/api/skills';
       const method = editingSkillId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 
           'Content-Type': 'application/json',
@@ -440,7 +451,7 @@ export default function App() {
   const handleDeleteSkill = async (id: number) => {
     if (!token || !window.confirm('Delete this skill?')) return;
     try {
-      const res = await fetch(`/api/skills/${id}`, {
+      const res = await apiFetch(`/api/skills/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -461,7 +472,7 @@ export default function App() {
     try {
       const url = editingCertId ? `/api/certifications/${editingCertId}` : '/api/certifications';
       const method = editingCertId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { 
           'Content-Type': 'application/json',
@@ -485,7 +496,7 @@ export default function App() {
   const handleDeleteCertification = async (id: number) => {
     if (!token || !window.confirm('Delete this certification?')) return;
     try {
-      const res = await fetch(`/api/certifications/${id}`, {
+      const res = await apiFetch(`/api/certifications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -503,7 +514,7 @@ export default function App() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/contact', {
+      const res = await apiFetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contactForm)
@@ -522,7 +533,7 @@ export default function App() {
   const handleMarkAsRead = async (id: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/messages/${id}/read`, {
+      const res = await apiFetch(`/api/messages/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -547,7 +558,7 @@ export default function App() {
     formData.append('image', file);
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -567,7 +578,7 @@ export default function App() {
   const handleDeleteMessage = async (id: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/messages/${id}`, {
+      const res = await apiFetch(`/api/messages/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -705,7 +716,7 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">DevPulse</span>
+            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
           </div>
           
           {/* Desktop Nav */}
@@ -1021,7 +1032,7 @@ business impact through high-quality, testable code.
                             Download my full CV to learn more about my experience and qualifications.
                           </p>
                           <a 
-                            href="/api/resume/download"
+                            href={apiUrl('/api/resume/download')}
                             download
                             className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
                           >
@@ -1041,7 +1052,7 @@ business impact through high-quality, testable code.
                         <ChevronRight className="w-4 h-4" />
                       </button>
                       <a 
-                        href="/api/resume/download"
+                        href={apiUrl('/api/resume/download')}
                         download
                         className="bg-zinc-800 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-700 transition-all border border-zinc-700 flex items-center gap-2"
                       >
