@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -265,6 +266,16 @@ async function startServer() {
   await initDb();
   const app = express();
   const PORT = 3000;
+
+  app.use(
+    cors({
+      origin: [
+        "https://devpulse-wordpress.onrender.com",
+        "https://YOUR-VERCEL-APP.vercel.app",
+      ],
+      credentials: true,
+    })
+  );
 
   app.use(express.json());
 
