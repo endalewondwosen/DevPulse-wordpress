@@ -1,4 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+dotenv.config();
+
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -12,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = "devpulse-secret-key-123";
-
+//
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
 let pgPool: pg.Pool | null = null;
