@@ -266,6 +266,8 @@ async function startServer() {
   await initDb();
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  const PUBLIC_SITE_URL =
+    process.env.PUBLIC_SITE_URL || "https://wondwosenportifolio.vercel.app";
 
   app.use(cors({
     origin: (origin, callback) => {
@@ -289,6 +291,13 @@ async function startServer() {
   }));
 
   app.use(express.json());
+
+  // If this service is used as an API backend (e.g. Render),
+  // redirect the public root/non-API pages to the main Vercel site.
+  if (process.env.NODE_ENV === "production") {
+    app.get("/", (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
+    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
+  }
 
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, "public", "uploads");
