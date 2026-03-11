@@ -271,7 +271,7 @@ async function startServer() {
     cors({
       origin: [
         "https://devpulse-wordpress.onrender.com",
-        "https://YOUR-VERCEL-APP.vercel.app",
+        "wondwosenportifolio.vercel.app",
       ],
       credentials: true,
     })
