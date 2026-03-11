@@ -1679,6 +1679,7 @@ business impact through high-quality, testable code.
                                 {isGeneratingReport ? 'Analyzing...' : 'Refresh Report'}
                               </button>
                             </div>
+                            {/* //tdjhfjd */}
                             <div className="prose prose-invert prose-sm max-w-none h-[180px] overflow-y-auto scrollbar-hide">
                               {geminiReport ? (
                                 <div className="text-zinc-400 leading-relaxed">
