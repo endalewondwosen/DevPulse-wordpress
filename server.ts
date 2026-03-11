@@ -4,6 +4,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +69,16 @@ if (postCount.count === 0) {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.use(
+    cors({
+      origin: [
+        "https://devpulse-wordpress.onrender.com",
+        "https://YOUR-VERCEL-APP.vercel.app",
+      ],
+      credentials: true,
+    })
+  );
 
   app.use(express.json());
 

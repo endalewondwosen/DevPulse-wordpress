@@ -20,6 +20,8 @@ import {
   EyeOff
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 interface Post {
   id: number;
   title: string;
@@ -91,9 +93,9 @@ export default function App() {
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
       const [projRes, snipRes, statRes] = await Promise.all([
-        fetch(`/api/posts?type=project${searchParam}`, { headers }),
-        fetch(`/api/posts?type=snippet${searchParam}`, { headers }),
-        fetch('/api/stats')
+        fetch(`${API_BASE_URL}/api/posts?type=project${searchParam}`, { headers }),
+        fetch(`${API_BASE_URL}/api/posts?type=snippet${searchParam}`, { headers }),
+        fetch(`${API_BASE_URL}/api/stats`)
       ]);
       
       const [projData, snipData, statData] = await Promise.all([
@@ -156,14 +158,14 @@ export default function App() {
 
   const handlePostClick = async (id: number) => {
     // Trigger the logging middleware on the server
-    await fetch(`/api/posts/${id}`);
+    await fetch(`${API_BASE_URL}/api/posts/${id}`);
     fetchData(); // Refresh stats
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
@@ -234,7 +236,7 @@ export default function App() {
     if (!token || !window.confirm("Are you sure you want to delete this content? This action cannot be undone.")) return;
     
     try {
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/posts/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
