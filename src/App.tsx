@@ -43,6 +43,21 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import Markdown from 'react-markdown';
+import { ProjectCard } from './components/ProjectCard';
+import { SnippetItem } from './components/SnippetItem';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -52,6 +67,7 @@ interface Post {
   content: string;
   type: 'project' | 'snippet';
   status: 'publish' | 'private';
+  image_url?: string;
   meta: {
     github_url?: string;
     project_url?: string;
@@ -64,6 +80,41 @@ interface Post {
 interface Stat {
   endpoint: string;
   views: number;
+}
+
+interface Experience {
+  id: number;
+  company: string;
+  role: string;
+  period: string;
+  description: string;
+  sort_order: number;
+}
+
+interface Skill {
+  id: number;
+  category: string;
+  name: string;
+  sort_order: number;
+}
+
+interface Certification {
+  id: number;
+  name: string;
+  issuer: string;
+  date: string;
+  url?: string;
+  sort_order: number;
+}
+
+interface Message {
+  id: number;
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+  status: string;
+  created_at: string;
 }
 
 export default function App() {
@@ -199,10 +250,14 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      const [projRes, snipRes, statRes] = await Promise.all([
+      const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/posts?type=project${searchParam}`, { headers }),
         fetch(`${API_BASE_URL}/api/posts?type=snippet${searchParam}`, { headers }),
-        fetch(`${API_BASE_URL}/api/stats`)
+        fetch(`${API_BASE_URL}/api/experience`, { headers }),
+        fetch(`${API_BASE_URL}/api/skills`, { headers }),
+        fetch(`${API_BASE_URL}/api/certifications`, { headers }),
+        fetch(`${API_BASE_URL}/api/stats`),
+        token ? fetch(`${API_BASE_URL}/api/messages`, { headers }) : Promise.resolve(null as any)
       ]);
       
       const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([

@@ -3,10 +3,13 @@ import type { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
+import { v2 as cloudinary } from "cloudinary";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import cors from "cors";
+import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +17,7 @@ const __dirname = path.dirname(__filename);
 const JWT_SECRET = "devpulse-secret-key-123";
 
 // Cloudinary Configuration
-(cloudinary as any).config({ 
+cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
   api_key: process.env.CLOUDINARY_API_KEY || 'demo',
   api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
