@@ -265,17 +265,28 @@ async function initDb() {
 async function startServer() {
   await initDb();
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(
-    cors({
-      origin: [
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow non-browser tools (no Origin header)
+      if (!origin) return callback(null, true);
+
+      const allowList = new Set([
         "https://devpulse-wordpress.onrender.com",
-        "https://wondwosenportifolio.vercel.app",
-      ],
-      credentials: true,
-    })
-  );
+        "https://wondwosenportifolio.vercel.app", // legacy typo domain (kept for compatibility)
+        "https://wondwosenportfolio.vercel.app",
+      ]);
+
+      if (allowList.has(origin)) return callback(null, true);
+
+      // Allow Vercel previews like https://<branch>-<project>.vercel.app
+      if (origin.endsWith(".vercel.app")) return callback(null, true);
+
+      return callback(new Error("CORS: origin not allowed"), false);
+    },
+    credentials: true,
+  }));
 
   app.use(express.json());
 
