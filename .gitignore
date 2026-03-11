@@ -6,12 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# Setup scripts
-migrate-neon.ps1
-migrate-neon.sql
-setup-neon-simple.ps1
-setup-neon.ps1
-
-# Uploads
-public/uploads/
