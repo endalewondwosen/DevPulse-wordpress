@@ -765,13 +765,16 @@ async function startServer() {
 
   // Resume Download Route
   app.get("/api/resume/download", (req, res) => {
-    // In a real app, this would serve the actual PDF file
-    // For now, we'll provide a placeholder or redirect to a public asset if it exists
     const resumePath = path.join(__dirname, "public", "resume.pdf");
-    // Check if file exists, if not send a friendly message
-    res.setHeader('Content-Disposition', 'attachment; filename=Wondwosen_Endale_Resume.pdf');
-    res.setHeader('Content-Type', 'application/pdf');
-    res.send("This is a placeholder for the resume PDF. Please upload your actual resume.pdf to the public folder.");
+    
+    // Check if file exists
+    if (fs.existsSync(resumePath)) {
+      res.setHeader('Content-Disposition', 'attachment; filename=Wondwosen_Endale_Resume.pdf');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.sendFile(resumePath);
+    } else {
+      res.status(404).json({ error: "Resume file not found" });
+    }
   });
 
   // Stats for the dashboard
