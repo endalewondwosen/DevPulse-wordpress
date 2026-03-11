@@ -716,7 +716,7 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">DevPulse</span>
+            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
           </div>
           
           {/* Desktop Nav */}
