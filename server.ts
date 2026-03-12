@@ -92,6 +92,17 @@ async function initDb() {
     // Column likely already exists
   }
 
+  // Migration for messages.status
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'unread'`);
+    } else {
+      await exec(`ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'unread'`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
   await exec(`
     CREATE TABLE IF NOT EXISTS post_meta (
       id ${idType},
@@ -454,7 +465,7 @@ async function startServer() {
     try {
       for (const [key, value] of Object.entries(settings)) {
         if (isPostgres) {
-          await query("INSERT INTO settings (key, value) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
+          await query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
         } else {
           // SQLite version
           const exists = await queryOne("SELECT id FROM settings WHERE key = $1", [key]);
