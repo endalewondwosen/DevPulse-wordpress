@@ -78,6 +78,13 @@ export default function App() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({
+    profile_image: '/profile.jpg',
+    resume_url: '/resume.pdf',
+    site_title: 'DevPulse Portfolio',
+    hero_title: 'Architecting Digital Excellence',
+    hero_subtitle: 'Full Stack Engineer & System Architect'
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,7 +146,7 @@ export default function App() {
   const [editingCertId, setEditingCertId] = useState<number | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('about');
-  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'messages'>('overview');
+  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'settings' | 'messages'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -150,6 +157,10 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  useEffect(() => {
+    document.title = settings.site_title || 'DevPulse Portfolio';
+  }, [settings.site_title]);
 
   useEffect(() => {
     localStorage.setItem('devpulse_theme', theme);
@@ -203,23 +214,25 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
+      const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
         apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
         apiFetch('/api/experience'),
         apiFetch('/api/skills'),
         apiFetch('/api/certifications'),
         apiFetch('/api/stats'),
+        apiFetch('/api/settings'),
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
       
-      const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([
+      const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
         processResponse(expRes),
         processResponse(skillRes),
         processResponse(certRes),
         processResponse(statRes),
+        processResponse(settingsRes),
         msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
 
@@ -229,6 +242,7 @@ export default function App() {
       setSkills(skillData);
       setCertifications(certData);
       setStats(statData);
+      setSettings(settingsData);
       setMessages(msgData);
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -575,6 +589,73 @@ export default function App() {
     }
   };
 
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSubmitting(true);
+    try {
+      const res = await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(settings)
+      });
+      await processResponse(res);
+      fetchData();
+      setNotification({ message: "Settings updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Error updating settings:", error);
+      setNotification({ message: error.message || "Failed to update settings", type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSettingFileUpload = async (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setNotification({ message: "File too large (max 10MB)", type: 'error' });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await apiFetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await processResponse(res);
+      
+      const newUrl = data.url;
+      setSettings(prev => ({ ...prev, [key]: newUrl }));
+      
+      // Auto-save setting
+      await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ [key]: newUrl })
+      });
+      
+      setNotification({ message: `${key.replace('_', ' ')} updated`, type: 'success' });
+    } catch (error: any) {
+      console.error("Setting upload error:", error);
+      setNotification({ message: error.message || "Upload failed", type: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDeleteMessage = async (id: number) => {
     if (!token) return;
     try {
@@ -716,7 +797,7 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
+            <span className="font-bold tracking-tight text-xl">{settings.site_title || 'DevPulse'}</span>
           </div>
           
           {/* Desktop Nav */}
@@ -1007,12 +1088,10 @@ export default function App() {
                       Available for Architecture & Development
                     </motion.div>
                     <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-8 leading-[0.9]">
-                      Wondwosen <span className="text-emerald-500">Endale.</span>
+                      {settings.hero_title || 'Wondwosen Endale.'}
                     </h1>
                     <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed mb-10">
-                    Full Stack Developer with 2 years of experience... seeking a role where I can apply my skills in building
-scalable AI-enhanced applications. Collaborative team player focused on delivering measurable
-business impact through high-quality, testable code.
+                      {settings.hero_subtitle || 'Full Stack Developer with 2 years of experience...'}
                     </p>
                     
                     {/* CV Viewer Section */}
@@ -1023,7 +1102,7 @@ business impact through high-quality, testable code.
                       </h3>
                       <div className="bg-white rounded-lg shadow-xl overflow-hidden">
                         <iframe
-                          src="/resume.pdf"
+                          src={settings.resume_url || "/resume.pdf"}
                           className="w-full h-[600px] border-0"
                           title="My CV PDF"
                         />
@@ -1052,7 +1131,7 @@ business impact through high-quality, testable code.
                         <ChevronRight className="w-4 h-4" />
                       </button>
                       <a 
-                        href={apiUrl('/api/resume/download')}
+                        href={settings.resume_url || apiUrl('/api/resume/download')}
                         download
                         className="bg-zinc-800 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-700 transition-all border border-zinc-700 flex items-center gap-2"
                       >
@@ -1080,8 +1159,8 @@ business impact through high-quality, testable code.
                       {/* Main Image Container */}
                       <div className="w-full h-full rounded-[3rem] overflow-hidden border-2 border-zinc-800 bg-zinc-900 relative group">
                         <img 
-                          src="/profile.jpg" 
-                          alt="Wondwosen Endale" 
+                          src={settings.profile_image || "/profile.jpg"} 
+                          alt={settings.site_title || "Wondwosen Endale"} 
                           className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
@@ -1380,6 +1459,7 @@ business impact through high-quality, testable code.
                       { id: 'experience', name: 'Experience', icon: Briefcase },
                       { id: 'skills', name: 'Skills', icon: Wrench },
                       { id: 'certifications', name: 'Certifications', icon: Award },
+                      { id: 'settings', name: 'Settings', icon: Settings },
                       { id: 'messages', name: 'Inbox', icon: Inbox },
                     ].map((item) => (
                       <button
@@ -1422,9 +1502,10 @@ business impact through high-quality, testable code.
                           {adminModule === 'projects' && <Box className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'snippets' && <Terminal className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'experience' && <Briefcase className="w-6 h-6 text-emerald-500" />}
-                          {adminModule === 'skills' && <Wrench className="w-6 h-6 text-emerald-500" />}
-                          {adminModule === 'certifications' && <Award className="w-6 h-6 text-emerald-500" />}
-                          {adminModule === 'messages' && <Inbox className="w-6 h-6 text-emerald-500" />}
+                          { adminModule === 'skills' && <Wrench className="w-6 h-6 text-emerald-500" />}
+                          { adminModule === 'certifications' && <Award className="w-6 h-6 text-emerald-500" />}
+                          { adminModule === 'settings' && <Settings className="w-6 h-6 text-emerald-500" />}
+                          { adminModule === 'messages' && <Inbox className="w-6 h-6 text-emerald-500" />}
                           {adminModule}
                         </h2>
                         
@@ -1626,6 +1707,96 @@ business impact through high-quality, testable code.
                             </div>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Settings Module */}
+                    {adminModule === 'settings' && (
+                      <div className="space-y-8 max-w-2xl">
+                        <form onSubmit={handleUpdateSettings} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Site Title</label>
+                              <input 
+                                type="text"
+                                value={settings.site_title}
+                                onChange={(e) => setSettings({...settings, site_title: e.target.value})}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Profile Image</label>
+                              <div className="relative group/upload">
+                                <input 
+                                  type="text"
+                                  value={settings.profile_image}
+                                  onChange={(e) => setSettings({...settings, profile_image: e.target.value})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-10"
+                                />
+                                <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={(e) => handleSettingFileUpload('profile_image', e)}
+                                  />
+                                  <Upload className="w-4 h-4" />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Hero Title</label>
+                            <input 
+                              type="text"
+                              value={settings.hero_title}
+                              onChange={(e) => setSettings({...settings, hero_title: e.target.value})}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Hero Subtitle</label>
+                            <textarea 
+                              rows={3}
+                              value={settings.hero_subtitle}
+                              onChange={(e) => setSettings({...settings, hero_subtitle: e.target.value})}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Resume / CV File (PDF)</label>
+                            <div className="relative group/upload">
+                              <input 
+                                type="text"
+                                value={settings.resume_url}
+                                onChange={(e) => setSettings({...settings, resume_url: e.target.value})}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-10"
+                                placeholder="/resume.pdf"
+                              />
+                              <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                <input 
+                                  type="file" 
+                                  className="hidden" 
+                                  accept="application/pdf"
+                                  onChange={(e) => handleSettingFileUpload('resume_url', e)}
+                                />
+                                <Upload className="w-4 h-4" />
+                              </label>
+                            </div>
+                          </div>
+
+                          <button 
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="bg-emerald-500 text-black font-bold px-8 py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center gap-2"
+                          >
+                            {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
+                            Save All Settings
+                          </button>
+                        </form>
                       </div>
                     )}
 
