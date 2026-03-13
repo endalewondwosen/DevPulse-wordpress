@@ -48,7 +48,17 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
         setIsLoading(true);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+            const apiKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY 
+                ? import.meta.env.VITE_GEMINI_API_KEY 
+                : process.env.GEMINI_API_KEY || '';
+
+            if (!apiKey) {
+                setMessages(prev => [...prev, { role: 'assistant', content: "Error: No API key found. Please ensure VITE_GEMINI_API_KEY is set in your Vercel Environment Variables." }]);
+                setIsLoading(false);
+                return;
+            }
+
+            const ai = new GoogleGenAI({ apiKey });
             const model = ai.models.generateContent({
                 model: "gemini-3-flash-preview",
                 contents: [
@@ -88,9 +98,10 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
             const text = response.text || "I'm sorry, I couldn't process that request.";
 
             setMessages(prev => [...prev, { role: 'assistant', content: text }]);
-        } catch (error) {
+        } catch (error: any) {
             console.error("AI Assistant Error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "I'm having a bit of trouble connecting right now. Please try again in a moment!" }]);
+            const errorMsg = error?.message || "connection error";
+            setMessages(prev => [...prev, { role: 'assistant', content: `I'm having a bit of trouble connecting right now (${errorMsg}). Please try again in a moment!` }]);
         } finally {
             setIsLoading(false);
         }
