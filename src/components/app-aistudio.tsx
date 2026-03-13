@@ -55,6 +55,8 @@
 
 // import { ProjectCard } from './components/ProjectCard';
 // import { SnippetItem } from './components/SnippetItem';
+// import { AIChatAssistant } from './components/AIChatAssistant';
+// import { ProjectDeepDive } from './components/ProjectDeepDive';
 // import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 // export default function App() {
@@ -94,7 +96,11 @@
 //             github_url: '',
 //             project_url: '',
 //             tech_stack: '',
-//             language: ''
+//             language: '',
+//             challenge: '',
+//             solution: '',
+//             impact: '',
+//             architecture: ''
 //         }
 //     });
 //     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,6 +143,7 @@
 //     const [searchTerm, setSearchTerm] = useState('');
 //     const [geminiReport, setGeminiReport] = useState<string>('');
 //     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+//     const [selectedProject, setSelectedProject] = useState<Post | null>(null);
 
 //     useEffect(() => {
 //         if (notification) {
@@ -280,10 +287,14 @@
 //         }
 //     };
 
-//     const handlePostClick = async (id: number) => {
+//     const handlePostClick = async (post: Post) => {
 //         // Trigger the logging middleware on the server
-//         await fetch(`/api/posts/${id}`);
+//         await fetch(`/api/posts/${post.id}`);
 //         fetchData(); // Refresh stats
+
+//         if (post.type === 'project') {
+//             setSelectedProject(post);
+//         }
 //     };
 
 //     const handleLogin = async (e: React.FormEvent) => {
@@ -341,7 +352,7 @@
 //                 type: 'project',
 //                 status: 'publish',
 //                 image_url: '',
-//                 meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+//                 meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
 //             });
 //             setEditingId(null);
 //             fetchData();
@@ -701,7 +712,11 @@
 //                 github_url: post.meta.github_url || '',
 //                 project_url: post.meta.project_url || '',
 //                 tech_stack: post.meta.tech_stack || '',
-//                 language: post.meta.language || ''
+//                 language: post.meta.language || '',
+//                 challenge: post.meta.challenge || '',
+//                 solution: post.meta.solution || '',
+//                 impact: post.meta.impact || '',
+//                 architecture: post.meta.architecture || ''
 //             }
 //         });
 //         // Scroll to form
@@ -716,7 +731,7 @@
 //             type: 'project',
 //             status: 'publish',
 //             image_url: '',
-//             meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+//             meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
 //         });
 //     };
 
@@ -1353,7 +1368,7 @@
 //                                 <ProjectCard
 //                                     key={project.id}
 //                                     project={project}
-//                                     onClick={() => handlePostClick(project.id)}
+//                                     onClick={() => handlePostClick(project)}
 //                                 />
 //                             ))}
 //                         </motion.div>
@@ -1371,7 +1386,7 @@
 //                                 <SnippetItem
 //                                     key={snippet.id}
 //                                     snippet={snippet}
-//                                     onClick={() => handlePostClick(snippet.id)}
+//                                     onClick={() => handlePostClick(snippet)}
 //                                 />
 //                             ))}
 //                         </motion.div>
@@ -1469,7 +1484,7 @@
 //                                                             setEditingSkillId(null);
 //                                                             setEditingCertId(null);
 //                                                             // Reset forms
-//                                                             setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '' } });
+//                                                             setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
 //                                                             setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
 //                                                             setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
 //                                                             setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
@@ -1732,6 +1747,40 @@
 //                                                                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
 //                                                                 placeholder="GitHub URL"
 //                                                             />
+
+//                                                             {adminModule === 'projects' && (
+//                                                                 <div className="space-y-4 pt-2 border-t border-zinc-800">
+//                                                                     <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Deep Dive Details</h4>
+//                                                                     <textarea
+//                                                                         rows={2}
+//                                                                         value={newPost.meta.challenge}
+//                                                                         onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, challenge: e.target.value } })}
+//                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+//                                                                         placeholder="The Challenge (What problem were you solving?)"
+//                                                                     />
+//                                                                     <textarea
+//                                                                         rows={2}
+//                                                                         value={newPost.meta.solution}
+//                                                                         onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, solution: e.target.value } })}
+//                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+//                                                                         placeholder="The Solution (How did you solve it?)"
+//                                                                     />
+//                                                                     <textarea
+//                                                                         rows={2}
+//                                                                         value={newPost.meta.impact}
+//                                                                         onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, impact: e.target.value } })}
+//                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+//                                                                         placeholder="The Impact (What were the results?)"
+//                                                                     />
+//                                                                     <textarea
+//                                                                         rows={2}
+//                                                                         value={newPost.meta.architecture}
+//                                                                         onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, architecture: e.target.value } })}
+//                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+//                                                                         placeholder="Architecture (Tech stack details, patterns used)"
+//                                                                     />
+//                                                                 </div>
+//                                                             )}
 //                                                             <button
 //                                                                 type="submit"
 //                                                                 disabled={isSubmitting}
@@ -2116,6 +2165,24 @@
 //                     </div>
 //                 </div>
 //             </footer>
+
+//             {/* AI Interview Assistant */}
+//             <AIChatAssistant
+//                 portfolioData={{
+//                     projects,
+//                     experience,
+//                     skills,
+//                     certifications,
+//                     settings
+//                 }}
+//             />
+
+//             {/* Project Deep Dive Modal */}
+//             <ProjectDeepDive
+//                 project={selectedProject}
+//                 isOpen={!!selectedProject}
+//                 onClose={() => setSelectedProject(null)}
+//             />
 //         </div>
 //     );
 // }
