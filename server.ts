@@ -1,4 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+dotenv.config();
+
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -13,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = "devpulse-secret-key-123";
-
+//
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
 let pgPool: pg.Pool | null = null;
@@ -89,6 +92,17 @@ async function initDb() {
     // Column likely already exists
   }
 
+  // Migration for messages.status
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'unread'`);
+    } else {
+      await exec(`ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'unread'`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
   await exec(`
     CREATE TABLE IF NOT EXISTS post_meta (
       id ${idType},
@@ -139,6 +153,12 @@ async function initDb() {
       url TEXT,
       sort_order INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      id ${idType},
+      key TEXT UNIQUE NOT NULL,
+      value TEXT
+    );
   `);
 
   // Seed data if empty
@@ -147,8 +167,6 @@ async function initDb() {
 
   if (count === 0) {
     console.log("Seeding initial data...");
-    
-    // Seed Projects
     const projects = [
       {
         title: "E-service portal",
@@ -189,8 +207,11 @@ async function initDb() {
         }
       }
     }
+  }
 
-    // Seed Experience
+  // Seed Experience if empty
+  const expCountRes = await queryOne("SELECT COUNT(*) as count FROM experience");
+  if (parseInt(expCountRes.count) === 0) {
     await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [
       "Adnan Business Group Technology Company", 
       "Full stack Developer", 
@@ -198,66 +219,81 @@ async function initDb() {
       "Developing web applications for Adama, Shagger, and Dire Dawa city e-services, traffic management systems, and project management tools.", 
       1
     ]);
+  }
 
-    // Seed Skills if empty
-    const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
-    const skillCount = parseInt(skillCountRes.count);
-
-    if (skillCount === 0) {
-      const skills = [
-        { cat: "frontend", name: "React JS / Next JS", order: 1 },
-        { cat: "frontend", name: "TypeScript", order: 2 },
-        { cat: "frontend", name: "Tailwind CSS", order: 3 },
-        { cat: "frontend", name: "Redux / Zustand", order: 4 },
-        { cat: "backend", name: "Node.js / Express", order: 1 },
-        { cat: "backend", name: "Nest JS", order: 2 },
-        { cat: "backend", name: "Laravel / PHP", order: 3 },
-        { cat: "backend", name: "Prisma ORM", order: 4 },
-        { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
-        { cat: "devops", name: "MongoDB", order: 2 },
-        { cat: "devops", name: "Docker / Git", order: 3 },
-        { cat: "additional", name: "AI Prompt Engineering", order: 1 },
-        { cat: "additional", name: "System Design", order: 2 },
-        { cat: "additional", name: "Microservices", order: 3 }
-      ];
-
-      for (const s of skills) {
-        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
-      }
-    }
-
-    // Ensure specific requested skills exist
-    const requestedSkills = [
-      { cat: "frontend", name: "Redux" },
-      { cat: "frontend", name: "Zustand" },
-      { cat: "backend", name: "Prisma" },
-      { cat: "devops", name: "PostgreSQL" },
-      { cat: "devops", name: "MySQL" },
-      { cat: "devops", name: "MongoDB" },
-      { cat: "devops", name: "Docker" },
-      { cat: "devops", name: "Git" },
-      { cat: "additional", name: "AI Prompt Engineering" }
+  // Seed Skills if empty
+  const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
+  const skillCount = parseInt(skillCountRes.count);
+  if (skillCount === 0) {
+    const skills = [
+      { cat: "frontend", name: "React JS / Next JS", order: 1 },
+      { cat: "frontend", name: "TypeScript", order: 2 },
+      { cat: "frontend", name: "Tailwind CSS", order: 3 },
+      { cat: "frontend", name: "Redux / Zustand", order: 4 },
+      { cat: "backend", name: "Node.js / Express", order: 1 },
+      { cat: "backend", name: "Nest JS", order: 2 },
+      { cat: "backend", name: "Laravel / PHP", order: 3 },
+      { cat: "backend", name: "Prisma ORM", order: 4 },
+      { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
+      { cat: "devops", name: "MongoDB", order: 2 },
+      { cat: "devops", name: "Docker / Git", order: 3 },
+      { cat: "additional", name: "AI Prompt Engineering", order: 1 },
+      { cat: "additional", name: "System Design", order: 2 },
+      { cat: "additional", name: "Microservices", order: 3 }
     ];
 
-    for (const s of requestedSkills) {
-      const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
-      if (!exists) {
-        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
-      }
+    for (const s of skills) {
+      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
     }
+  }
 
-    // Seed Certifications if empty
-    const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
-    const certCount = parseInt(certCountRes.count);
-    if (certCount === 0) {
-      const certs = [
-        { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
-        { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
-        { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
-      ];
-      for (const c of certs) {
-        await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
-      }
+  // Ensure specific requested skills exist
+  const requestedSkills = [
+    { cat: "frontend", name: "Redux" },
+    { cat: "frontend", name: "Zustand" },
+    { cat: "backend", name: "Prisma" },
+    { cat: "devops", name: "PostgreSQL" },
+    { cat: "devops", name: "MySQL" },
+    { cat: "devops", name: "MongoDB" },
+    { cat: "devops", name: "Docker" },
+    { cat: "devops", name: "Git" },
+    { cat: "additional", name: "AI Prompt Engineering" }
+  ];
+
+  for (const s of requestedSkills) {
+    const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
+    if (!exists) {
+      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+    }
+  }
+
+  // Seed Certifications if empty
+  const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
+  const certCount = parseInt(certCountRes.count);
+  if (certCount === 0) {
+    const certs = [
+      { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
+      { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
+      { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
+    ];
+    for (const c of certs) {
+      await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
+    }
+  }
+
+  // Seed Settings if empty
+  const settingsCountRes = await queryOne("SELECT COUNT(*) as count FROM settings");
+  const settingsCount = parseInt(settingsCountRes.count);
+  if (settingsCount === 0) {
+    const defaultSettings = [
+      { key: 'profile_image', value: '/profile.jpg' },
+      { key: 'resume_url', value: '/resume.pdf' },
+      { key: 'site_title', value: 'DevPulse Portfolio' },
+      { key: 'hero_title', value: 'Architecting Digital Excellence' },
+      { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' }
+    ];
+    for (const s of defaultSettings) {
+      await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);
     }
   }
 }
@@ -317,12 +353,13 @@ async function startServer() {
   });
   const upload = multer({ 
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
     fileFilter: (req, file, cb) => {
-      if (file.mimetype.startsWith('image/')) {
+      const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Only images are allowed'));
+        cb(new Error('Only images and PDFs are allowed'));
       }
     }
   });
@@ -394,7 +431,7 @@ async function startServer() {
   });
 
   // File Upload Route (Authenticated)
-  app.post("/api/upload", authenticateToken, upload.single('image'), (req, res) => {
+  app.post("/api/upload", authenticateToken, upload.single('file'), (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
@@ -402,8 +439,48 @@ async function startServer() {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl });
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl });
+  });
+
+  // Settings Routes
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const rows = await query("SELECT key, value FROM settings");
+      const settings = rows.reduce((acc: any, row: any) => {
+        acc[row.key] = row.value;
+        return acc;
+      }, {});
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/settings", authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const settings = req.body;
+    try {
+      for (const [key, value] of Object.entries(settings)) {
+        if (isPostgres) {
+          await query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
+        } else {
+          // SQLite version
+          const exists = await queryOne("SELECT id FROM settings WHERE key = $1", [key]);
+          if (exists) {
+            await query("UPDATE settings SET value = $1 WHERE key = $2", [value, key]);
+          } else {
+            await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [key, value]);
+          }
+        }
+      }
+      res.json({ message: "Settings updated" });
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      res.status(500).json({ error: "Failed to update settings" });
+    }
   });
 
   // Create Post Route (Authenticated)

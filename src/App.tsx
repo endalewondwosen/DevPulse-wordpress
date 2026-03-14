@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Terminal, 
-  Code2, 
-  ExternalLink, 
-  Github, 
-  Layout, 
+import {
+  Terminal,
+  Code2,
+  ExternalLink,
+  Github,
+  Layout,
   Activity,
   ChevronRight,
   Box,
@@ -41,22 +41,25 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 import Markdown from 'react-markdown';
 
 import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
+import { AIChatAssistant } from './components/AIChatAssistant';
+import { ProjectDeepDive } from './components/ProjectDeepDive';
+
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
@@ -78,6 +81,13 @@ export default function App() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({
+    profile_image: '/profile.jpg',
+    resume_url: '/resume.pdf',
+    site_title: 'DevPulse Portfolio',
+    hero_title: 'Architecting Digital Excellence',
+    hero_subtitle: 'Full Stack Engineer & System Architect'
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,10 +149,11 @@ export default function App() {
   const [editingCertId, setEditingCertId] = useState<number | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('about');
-  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'messages'>('overview');
+  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'settings' | 'messages'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Post | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -150,6 +161,10 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  useEffect(() => {
+    document.title = settings.site_title || 'DevPulse Portfolio';
+  }, [settings.site_title]);
 
   useEffect(() => {
     localStorage.setItem('devpulse_theme', theme);
@@ -203,23 +218,25 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
+      const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
         apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
         apiFetch('/api/experience'),
         apiFetch('/api/skills'),
         apiFetch('/api/certifications'),
         apiFetch('/api/stats'),
+        apiFetch('/api/settings'),
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
-      
-      const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([
+
+      const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
         processResponse(expRes),
         processResponse(skillRes),
         processResponse(certRes),
         processResponse(statRes),
+        processResponse(settingsRes),
         msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
 
@@ -229,6 +246,7 @@ export default function App() {
       setSkills(skillData);
       setCertifications(certData);
       setStats(statData);
+      setSettings(settingsData);
       setMessages(msgData);
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -243,7 +261,7 @@ export default function App() {
 
   const processResponse = async (res: Response) => {
     const contentType = res.headers.get("content-type");
-    
+
     if (res.status === 401 || res.status === 403) {
       const isAuthAction = res.url.includes('/api/login');
       if (!isAuthAction && token) {
@@ -279,10 +297,14 @@ export default function App() {
     }
   };
 
-  const handlePostClick = async (id: number) => {
+  const handlePostClick = async (post: Post) => {
     // Trigger the logging middleware on the server
-    await apiFetch(`/api/posts/${id}`);
+    await apiFetch(`/api/posts/${post.id}`);
     fetchData(); // Refresh stats
+
+    if (post.type === 'project') {
+      setSelectedProject(post);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -325,7 +347,7 @@ export default function App() {
 
       const res = await apiFetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -344,9 +366,9 @@ export default function App() {
       });
       setEditingId(null);
       fetchData();
-      setNotification({ 
-        message: editingId ? "Content updated successfully!" : "Content published successfully!", 
-        type: 'success' 
+      setNotification({
+        message: editingId ? "Content updated successfully!" : "Content published successfully!",
+        type: 'success'
       });
     } catch (error: any) {
       console.error("Error saving post:", error);
@@ -358,7 +380,7 @@ export default function App() {
 
   const handleDeletePost = async (id: number) => {
     if (!token || !window.confirm("Are you sure you want to delete this content? This action cannot be undone.")) return;
-    
+
     try {
       const res = await apiFetch(`/api/posts/${id}`, {
         method: 'DELETE',
@@ -384,7 +406,7 @@ export default function App() {
       const method = editingExpId ? 'PUT' : 'POST';
       const res = await apiFetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -429,7 +451,7 @@ export default function App() {
       const method = editingSkillId ? 'PUT' : 'POST';
       const res = await apiFetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -474,7 +496,7 @@ export default function App() {
       const method = editingCertId ? 'PUT' : 'POST';
       const res = await apiFetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -563,12 +585,79 @@ export default function App() {
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
-      
+
       const data = await processResponse(res);
       setNewPost({ ...newPost, image_url: data.url });
       setNotification({ message: "Image uploaded successfully", type: 'success' });
     } catch (error: any) {
       console.error("Upload error:", error);
+      setNotification({ message: error.message || "Upload failed", type: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSubmitting(true);
+    try {
+      const res = await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(settings)
+      });
+      await processResponse(res);
+      fetchData();
+      setNotification({ message: "Settings updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Error updating settings:", error);
+      setNotification({ message: error.message || "Failed to update settings", type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSettingFileUpload = async (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setNotification({ message: "File too large (max 10MB)", type: 'error' });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await apiFetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await processResponse(res);
+
+      const newUrl = data.url;
+      setSettings(prev => ({ ...prev, [key]: newUrl }));
+
+      // Auto-save setting
+      await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ [key]: newUrl })
+      });
+
+      setNotification({ message: `${key.replace('_', ' ')} updated`, type: 'success' });
+    } catch (error: any) {
+      console.error("Setting upload error:", error);
       setNotification({ message: error.message || "Upload failed", type: 'error' });
     } finally {
       setIsUploading(false);
@@ -706,7 +795,7 @@ export default function App() {
       {/* Navigation */}
       <nav className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => {
               setActiveTab('home');
@@ -716,30 +805,28 @@ export default function App() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
               <Terminal className="w-5 h-5 text-black" />
             </div>
-            <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
+            <span className="font-bold tracking-tight text-xl">{settings.site_title || 'DevPulse'}</span>
           </div>
-          
+
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item)}
-                className={`text-sm font-medium transition-colors ${
-                  (item.type === 'tab' && activeTab === item.id) || 
+                className={`text-sm font-medium transition-colors ${(item.type === 'tab' && activeTab === item.id) ||
                   (item.type === 'scroll' && activeTab === 'home' && activeSection === item.id)
-                    ? 'text-emerald-500'
-                    : 'text-zinc-400 hover:text-zinc-100'
-                }`}
+                  ? 'text-emerald-500'
+                  : 'text-zinc-400 hover:text-zinc-100'
+                  }`}
               >
                 {item.name}
               </button>
             ))}
             <button
               onClick={() => setActiveTab('snippets')}
-              className={`text-sm font-medium transition-colors ${
-                activeTab === 'snippets' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
-              }`}
+              className={`text-sm font-medium transition-colors ${activeTab === 'snippets' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
+                }`}
             >
               Snippets
             </button>
@@ -749,18 +836,17 @@ export default function App() {
             {token && (
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`hidden md:flex items-center gap-2 text-sm font-medium transition-colors ${
-                  activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
-                }`}
+                className={`hidden md:flex items-center gap-2 text-sm font-medium transition-colors ${activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
+                  }`}
               >
                 <Activity className="w-4 h-4" />
                 <span>Dashboard</span>
               </button>
             )}
-            
+
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
 
-            <button 
+            <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
@@ -769,7 +855,7 @@ export default function App() {
             </button>
 
             {token ? (
-              <button 
+              <button
                 onClick={handleLogout}
                 className="hidden md:flex items-center gap-2 text-zinc-400 hover:text-zinc-100 text-sm transition-colors"
               >
@@ -777,7 +863,7 @@ export default function App() {
                 <span>Logout</span>
               </button>
             ) : (
-              <button 
+              <button
                 onClick={() => setShowLogin(true)}
                 className="hidden md:flex items-center gap-2 text-zinc-400 hover:text-zinc-100 text-sm transition-colors"
               >
@@ -787,7 +873,7 @@ export default function App() {
             )}
 
             {/* Mobile Menu Toggle */}
-            <button 
+            <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 text-zinc-400 hover:text-zinc-100 transition-colors"
             >
@@ -837,7 +923,7 @@ export default function App() {
                       <Activity className="w-5 h-5" />
                       Dashboard
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         handleLogout();
                         setIsMenuOpen(false);
@@ -849,7 +935,7 @@ export default function App() {
                     </button>
                   </>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
                       setShowLogin(true);
                       setIsMenuOpen(false);
@@ -868,15 +954,14 @@ export default function App() {
 
       <AnimatePresence>
         {notification && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 20, x: '-50%' }}
-            className={`fixed bottom-8 left-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${
-              notification.type === 'success' 
-                ? 'bg-emerald-500 text-black border-emerald-400' 
-                : 'bg-red-500 text-white border-red-400'
-            }`}
+            className={`fixed bottom-8 left-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${notification.type === 'success'
+              ? 'bg-emerald-500 text-black border-emerald-400'
+              : 'bg-red-500 text-white border-red-400'
+              }`}
           >
             {notification.type === 'success' ? <Activity className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
             <span className="font-bold text-sm">{notification.message}</span>
@@ -886,13 +971,13 @@ export default function App() {
 
       <AnimatePresence>
         {showLogin && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl"
@@ -903,36 +988,36 @@ export default function App() {
                 </div>
                 <h2 className="text-2xl font-bold">Developer Login</h2>
               </div>
-              
+
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Username</label>
-                  <input 
+                  <input
                     type="text"
                     value={loginData.username}
-                    onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                    onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                     placeholder="admin"
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Password</label>
-                  <input 
+                  <input
                     type="password"
                     value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                     placeholder="password"
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                 </div>
                 <div className="pt-4 flex gap-3">
-                  <button 
+                  <button
                     type="submit"
                     className="flex-1 bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-colors"
                   >
                     Authenticate
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowLogin(false)}
                     className="px-6 bg-zinc-800 text-zinc-300 font-bold py-3 rounded-xl hover:bg-zinc-700 transition-colors"
@@ -950,31 +1035,31 @@ export default function App() {
         <header className="mb-16">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
             <div className="max-w-2xl">
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4"
               >
                 Headless <span className="text-emerald-500">Architecture</span>
               </motion.h1>
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 className="text-zinc-400 text-xl leading-relaxed"
               >
-                A professional showcase of decoupled content management. 
+                A professional showcase of decoupled content management.
                 WordPress-style API logic powering a high-performance React interface.
               </motion.p>
             </div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="relative w-full md:w-72"
             >
               <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input 
+              <input
                 type="text"
                 placeholder="Search resources..."
                 value={searchQuery}
@@ -998,7 +1083,7 @@ export default function App() {
               <section id="about" className="py-12 md:py-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                   <div className="max-w-2xl order-2 lg:order-1">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-widest uppercase mb-6"
@@ -1007,14 +1092,12 @@ export default function App() {
                       Available for Architecture & Development
                     </motion.div>
                     <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-8 leading-[0.9]">
-                      Wondwosen <span className="text-emerald-500">Endale.</span>
+                      {settings.hero_title || 'Wondwosen Endale.'}
                     </h1>
                     <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed mb-10">
-                    Full Stack Developer with 2 years of experience... seeking a role where I can apply my skills in building
-scalable AI-enhanced applications. Collaborative team player focused on delivering measurable
-business impact through high-quality, testable code.
+                      {settings.hero_subtitle || 'Full Stack Developer with 2 years of experience...'}
                     </p>
-                    
+
                     {/* CV Viewer Section */}
                     <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
                       <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
@@ -1023,7 +1106,7 @@ business impact through high-quality, testable code.
                       </h3>
                       <div className="bg-white rounded-lg shadow-xl overflow-hidden">
                         <iframe
-                          src="/resume.pdf"
+                          src={settings.resume_url || "/resume.pdf"}
                           className="w-full h-[600px] border-0"
                           title="My CV PDF"
                         />
@@ -1031,7 +1114,7 @@ business impact through high-quality, testable code.
                           <p className="text-sm text-zinc-600 mb-4">
                             Download my full CV to learn more about my experience and qualifications.
                           </p>
-                          <a 
+                          <a
                             href={apiUrl('/api/resume/download')}
                             download
                             className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
@@ -1042,17 +1125,17 @@ business impact through high-quality, testable code.
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-4">
-                      <button 
+                      <button
                         onClick={() => setActiveTab('projects')}
                         className="bg-emerald-500 text-black font-bold px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                       >
                         View Case Studies
                         <ChevronRight className="w-4 h-4" />
                       </button>
-                      <a 
-                        href={apiUrl('/api/resume/download')}
+                      <a
+                        href={settings.resume_url || apiUrl('/api/resume/download')}
                         download
                         className="bg-zinc-800 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-700 transition-all border border-zinc-700 flex items-center gap-2"
                       >
@@ -1061,7 +1144,7 @@ business impact through high-quality, testable code.
                     </div>
                   </div>
 
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
@@ -1076,12 +1159,12 @@ business impact through high-quality, testable code.
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Years Exp.</span>
                         </div>
                       </div>
-                      
+
                       {/* Main Image Container */}
                       <div className="w-full h-full rounded-[3rem] overflow-hidden border-2 border-zinc-800 bg-zinc-900 relative group">
-                        <img 
-                          src="/profile.jpg" 
-                          alt="Wondwosen Endale" 
+                        <img
+                          src={settings.profile_image || "/profile.jpg"}
+                          alt={settings.site_title || "Wondwosen Endale"}
                           className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
@@ -1179,9 +1262,9 @@ business impact through high-quality, testable code.
                         <h4 className="text-lg font-bold mb-1 group-hover:text-emerald-500 transition-colors">{cert.name}</h4>
                         <p className="text-zinc-500 text-sm mb-4">{cert.issuer}</p>
                         {cert.url && cert.url !== '#' && (
-                          <a 
-                            href={cert.url} 
-                            target="_blank" 
+                          <a
+                            href={cert.url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors"
                           >
@@ -1200,7 +1283,7 @@ business impact through high-quality, testable code.
                   <div>
                     <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Let's build something <br /> extraordinary together.</h2>
                     <p className="text-black/70 text-lg mb-8 font-medium">
-                      Currently accepting new projects and architectural consulting engagements. 
+                      Currently accepting new projects and architectural consulting engagements.
                       Reach out to discuss your vision.
                     </p>
                     <div className="flex flex-col gap-6">
@@ -1248,22 +1331,22 @@ business impact through high-quality, testable code.
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Name</label>
-                          <input 
+                          <input
                             required
                             type="text"
                             value={contactForm.name}
-                            onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
+                            onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                             className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
                             placeholder="John Doe"
                           />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Email</label>
-                          <input 
+                          <input
                             required
                             type="email"
                             value={contactForm.email}
-                            onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                            onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                             className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
                             placeholder="john@example.com"
                           />
@@ -1271,26 +1354,26 @@ business impact through high-quality, testable code.
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Subject</label>
-                        <input 
+                        <input
                           type="text"
                           value={contactForm.subject}
-                          onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
+                          onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
                           className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
                           placeholder="Project Inquiry"
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Message</label>
-                        <textarea 
+                        <textarea
                           required
                           rows={4}
                           value={contactForm.message}
-                          onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                          onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                           className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
                           placeholder="Tell me about your project..."
                         />
                       </div>
-                      <button 
+                      <button
                         disabled={isSubmitting}
                         type="submit"
                         className="w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-zinc-900 transition-all flex items-center justify-center gap-2"
@@ -1317,10 +1400,10 @@ business impact through high-quality, testable code.
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               {projects.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
-                  onClick={() => handlePostClick(project.id)}
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onClick={() => handlePostClick(project)}
                 />
               ))}
             </motion.div>
@@ -1335,10 +1418,10 @@ business impact through high-quality, testable code.
               className="space-y-4"
             >
               {snippets.map((snippet) => (
-                <SnippetItem 
-                  key={snippet.id} 
+                <SnippetItem
+                  key={snippet.id}
                   snippet={snippet}
-                  onClick={() => handlePostClick(snippet.id)}
+                  onClick={() => handlePostClick(snippet)}
                 />
               ))}
             </motion.div>
@@ -1361,7 +1444,7 @@ business impact through high-quality, testable code.
                   <p className="text-zinc-400 mb-8 max-w-sm">
                     This area is restricted to authorized developers. Please authenticate to manage your portfolio and view analytics.
                   </p>
-                  <button 
+                  <button
                     onClick={() => setShowLogin(true)}
                     className="bg-emerald-500 text-black font-bold px-10 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                   >
@@ -1380,16 +1463,16 @@ business impact through high-quality, testable code.
                       { id: 'experience', name: 'Experience', icon: Briefcase },
                       { id: 'skills', name: 'Skills', icon: Wrench },
                       { id: 'certifications', name: 'Certifications', icon: Award },
+                      { id: 'settings', name: 'Settings', icon: Settings },
                       { id: 'messages', name: 'Inbox', icon: Inbox },
                     ].map((item) => (
                       <button
                         key={item.id}
                         onClick={() => setAdminModule(item.id as any)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                          adminModule === item.id 
-                            ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
-                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${adminModule === item.id
+                          ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                          : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+                          }`}
                       >
                         <item.icon className="w-4 h-4" />
                         {item.name}
@@ -1400,9 +1483,9 @@ business impact through high-quality, testable code.
                         )}
                       </button>
                     ))}
-                    
+
                     <div className="mt-auto pt-8 border-t border-zinc-800">
-                      <button 
+                      <button
                         onClick={() => setToken(null)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all w-full"
                       >
@@ -1424,12 +1507,13 @@ business impact through high-quality, testable code.
                           {adminModule === 'experience' && <Briefcase className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'skills' && <Wrench className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'certifications' && <Award className="w-6 h-6 text-emerald-500" />}
+                          {adminModule === 'settings' && <Settings className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'messages' && <Inbox className="w-6 h-6 text-emerald-500" />}
                           {adminModule}
                         </h2>
-                        
+
                         {['projects', 'snippets', 'experience', 'skills', 'certifications'].includes(adminModule) && (
-                          <button 
+                          <button
                             onClick={() => {
                               setEditingId(null);
                               setEditingExpId(null);
@@ -1449,247 +1533,229 @@ business impact through high-quality, testable code.
                         )}
                       </div>
 
-                    {/* Overview Module */}
-                    {adminModule === 'overview' && (
-                      <div className="space-y-8">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          {[
-                            { label: 'Total Views', value: stats.reduce((acc, s) => acc + s.views, 0).toLocaleString(), icon: Eye, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                            { label: 'Unread Messages', value: messages.filter(m => m.status === 'unread').length, icon: Mail, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                            { label: 'Total Projects', value: projects.length, icon: Box, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-                            { label: 'Total Skills', value: skills.length, icon: Wrench, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-                          ].map((stat, i) => (
-                            <div key={i} className="bg-zinc-800/50 p-5 rounded-2xl border border-zinc-700/50 flex items-center gap-4">
-                              <div className={`p-3 rounded-xl ${stat.bg}`}>
-                                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                      {/* Overview Module */}
+                      {adminModule === 'overview' && (
+                        <div className="space-y-8">
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[
+                              { label: 'Total Views', value: stats.reduce((acc, s) => acc + s.views, 0).toLocaleString(), icon: Eye, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                              { label: 'Unread Messages', value: messages.filter(m => m.status === 'unread').length, icon: Mail, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                              { label: 'Total Projects', value: projects.length, icon: Box, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                              { label: 'Total Skills', value: skills.length, icon: Wrench, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+                            ].map((stat, i) => (
+                              <div key={i} className="bg-zinc-800/50 p-5 rounded-2xl border border-zinc-700/50 flex items-center gap-4">
+                                <div className={`p-3 rounded-xl ${stat.bg}`}>
+                                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+                                  <h3 className="text-2xl font-bold">{stat.value}</h3>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
-                                <h3 className="text-2xl font-bold">{stat.value}</h3>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                          {/* Traffic Chart */}
-                          <div className="lg:col-span-2 bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
-                            <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-emerald-500" />
-                              Traffic Distribution
-                            </h4>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={stats}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#333' : '#e4e4e7'} vertical={false} />
-                                <XAxis dataKey="endpoint" stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip 
-                                  cursor={{ fill: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
-                                  contentStyle={{ 
-                                    backgroundColor: theme === 'dark' ? '#151516' : '#ffffff', 
-                                    border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`, 
-                                    borderRadius: '12px',
-                                    color: theme === 'dark' ? '#f4f4f5' : '#09090b'
-                                  }}
-                                  itemStyle={{ color: '#10b981' }}
-                                />
-                                <Bar dataKey="views" fill="#10b981" radius={[6, 6, 0, 0]} barSize={30} />
-                              </BarChart>
-                            </ResponsiveContainer>
+                            ))}
                           </div>
 
-                          {/* Content Pie Chart */}
-                          <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
-                            <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
-                              <PieChartIcon className="w-4 h-4 text-emerald-500" />
-                              Content Mix
-                            </h4>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Projects', value: projects.length },
-                                    { name: 'Snippets', value: snippets.length },
-                                    { name: 'Experience', value: experience.length },
-                                  ]}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                >
-                                  <Cell fill="#10b981" />
-                                  <Cell fill="#3b82f6" />
-                                  <Cell fill="#8b5cf6" />
-                                </Pie>
-                                <Tooltip 
-                                  contentStyle={{ 
-                                    backgroundColor: theme === 'dark' ? '#151516' : '#ffffff', 
-                                    border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`, 
-                                    borderRadius: '12px',
-                                    color: theme === 'dark' ? '#f4f4f5' : '#09090b'
-                                  }}
-                                />
-                              </PieChart>
-                            </ResponsiveContainer>
-                            <div className="flex justify-center gap-4 mt-4">
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
-                              </div>
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                <div className="w-2 h-2 rounded-full bg-blue-500" /> Snippets
-                              </div>
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {/* Recent Messages */}
-                          <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
-                            <div className="flex items-center justify-between mb-6">
-                              <h4 className="text-sm font-bold flex items-center gap-2">
-                                <Inbox className="w-4 h-4 text-emerald-500" />
-                                Recent Messages
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Traffic Chart */}
+                            <div className="lg:col-span-2 bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
+                              <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-emerald-500" />
+                                Traffic Distribution
                               </h4>
-                              <button onClick={() => setAdminModule('messages')} className="text-[10px] font-bold text-emerald-500 hover:underline uppercase tracking-widest">View All</button>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#333' : '#e4e4e7'} vertical={false} />
+                                  <XAxis dataKey="endpoint" stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
+                                  <YAxis stroke={theme === 'dark' ? '#666' : '#a1a1aa'} fontSize={10} tickLine={false} axisLine={false} />
+                                  <Tooltip
+                                    cursor={{ fill: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
+                                    contentStyle={{
+                                      backgroundColor: theme === 'dark' ? '#151516' : '#ffffff',
+                                      border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+                                      borderRadius: '12px',
+                                      color: theme === 'dark' ? '#f4f4f5' : '#09090b'
+                                    }}
+                                    itemStyle={{ color: '#10b981' }}
+                                  />
+                                  <Bar dataKey="views" fill="#10b981" radius={[6, 6, 0, 0]} barSize={30} />
+                                </BarChart>
+                              </ResponsiveContainer>
                             </div>
-                            <div className="space-y-3">
-                              {messages.slice(0, 3).map(msg => (
-                                <div key={msg.id} className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center justify-between">
-                                  <div>
-                                    <p className="text-xs font-bold">{msg.name}</p>
-                                    <p className="text-[10px] text-zinc-500 truncate max-w-[200px]">{msg.subject}</p>
+
+                            {/* Content Pie Chart */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
+                              <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
+                                <PieChartIcon className="w-4 h-4 text-emerald-500" />
+                                Content Mix
+                              </h4>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[
+                                      { name: 'Projects', value: projects.length },
+                                      { name: 'Snippets', value: snippets.length },
+                                      { name: 'Experience', value: experience.length },
+                                    ]}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    <Cell fill="#10b981" />
+                                    <Cell fill="#3b82f6" />
+                                    <Cell fill="#8b5cf6" />
+                                  </Pie>
+                                  <Tooltip
+                                    contentStyle={{
+                                      backgroundColor: theme === 'dark' ? '#151516' : '#ffffff',
+                                      border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+                                      borderRadius: '12px',
+                                      color: theme === 'dark' ? '#f4f4f5' : '#09090b'
+                                    }}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
+                              <div className="flex justify-center gap-4 mt-4">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Snippets
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Recent Messages */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-sm font-bold flex items-center gap-2">
+                                  <Inbox className="w-4 h-4 text-emerald-500" />
+                                  Recent Messages
+                                </h4>
+                                <button onClick={() => setAdminModule('messages')} className="text-[10px] font-bold text-emerald-500 hover:underline uppercase tracking-widest">View All</button>
+                              </div>
+                              <div className="space-y-3">
+                                {messages.slice(0, 3).map(msg => (
+                                  <div key={msg.id} className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center justify-between">
+                                    <div>
+                                      <p className="text-xs font-bold">{msg.name}</p>
+                                      <p className="text-[10px] text-zinc-500 truncate max-w-[200px]">{msg.subject}</p>
+                                    </div>
+                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${msg.status === 'unread' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}`}>
+                                      {msg.status}
+                                    </span>
                                   </div>
-                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${msg.status === 'unread' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}`}>
-                                    {msg.status}
-                                  </span>
-                                </div>
-                              ))}
-                              {messages.length === 0 && <p className="text-xs text-zinc-600 italic text-center py-4">No messages yet.</p>}
+                                ))}
+                                {messages.length === 0 && <p className="text-xs text-zinc-600 italic text-center py-4">No messages yet.</p>}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Recent Activity */}
-                          <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
-                            <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-emerald-500" />
-                              Recent Activity
-                            </h4>
-                            <div className="space-y-3">
-                              {[
-                                ...projects.slice(0, 2).map(p => ({ type: 'Project', title: p.title, date: 'Recently' })),
-                                ...snippets.slice(0, 2).map(s => ({ type: 'Snippet', title: s.title, date: 'Recently' })),
-                                ...experience.slice(0, 1).map(e => ({ type: 'Experience', title: `${e.role} @ ${e.company}`, date: 'Recently' })),
-                              ].sort(() => Math.random() - 0.5).slice(0, 5).map((item, i) => (
-                                <div key={i} className="flex items-center gap-3 text-xs">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                  <span className="text-zinc-500 font-bold uppercase text-[8px] w-16">{item.type}</span>
-                                  <span className="text-zinc-300 truncate flex-1">{item.title}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* AI Insights */}
-                          <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
-                            <div className="flex items-center justify-between mb-6">
-                              <h4 className="text-sm font-bold flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-emerald-500" />
-                                Gemini AI Insights
+                            {/* Recent Activity */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
+                              <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-emerald-500" />
+                                Recent Activity
                               </h4>
-                              <button 
-                                onClick={generateGeminiReport}
-                                disabled={isGeneratingReport}
-                                className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 disabled:opacity-50"
-                              >
-                                {isGeneratingReport ? 'Analyzing...' : 'Refresh Report'}
-                              </button>
+                              <div className="space-y-3">
+                                {[
+                                  ...projects.slice(0, 2).map(p => ({ type: 'Project', title: p.title, date: 'Recently' })),
+                                  ...snippets.slice(0, 2).map(s => ({ type: 'Snippet', title: s.title, date: 'Recently' })),
+                                  ...experience.slice(0, 1).map(e => ({ type: 'Experience', title: `${e.role} @ ${e.company}`, date: 'Recently' })),
+                                ].sort(() => Math.random() - 0.5).slice(0, 5).map((item, i) => (
+                                  <div key={i} className="flex items-center gap-3 text-xs">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <span className="text-zinc-500 font-bold uppercase text-[8px] w-16">{item.type}</span>
+                                    <span className="text-zinc-300 truncate flex-1">{item.title}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="prose prose-invert prose-sm max-w-none h-[180px] overflow-y-auto scrollbar-hide">
-                              {geminiReport ? (
-                                <div className="text-zinc-400 leading-relaxed">
-                                  <Markdown>
-                                    {geminiReport}
-                                  </Markdown>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-zinc-600">
-                                  <Sparkles className="w-8 h-8 mb-2 opacity-20" />
-                                  <p className="text-xs italic">Click refresh to generate an AI analysis of your portfolio.</p>
-                                </div>
-                              )}
+
+                            {/* AI Insights */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-sm font-bold flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4 text-emerald-500" />
+                                  Gemini AI Insights
+                                </h4>
+                                <button
+                                  onClick={generateGeminiReport}
+                                  disabled={isGeneratingReport}
+                                  className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 disabled:opacity-50"
+                                >
+                                  {isGeneratingReport ? 'Analyzing...' : 'Refresh Report'}
+                                </button>
+                              </div>
+                              <div className="prose prose-invert prose-sm max-w-none h-[180px] overflow-y-auto scrollbar-hide">
+                                {geminiReport ? (
+                                  <div className="text-zinc-400 leading-relaxed">
+                                    <Markdown>
+                                      {geminiReport}
+                                    </Markdown>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center h-full text-zinc-600">
+                                    <Sparkles className="w-8 h-8 mb-2 opacity-20" />
+                                    <p className="text-xs italic">Click refresh to generate an AI analysis of your portfolio.</p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Projects & Snippets Module */}
-                    {(adminModule === 'projects' || adminModule === 'snippets') && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingId ? 'Edit Item' : 'Create New'}
-                          </h3>
-                          <form onSubmit={handleCreatePost} className="space-y-4">
-                            <input 
-                              required
-                              type="text"
-                              value={newPost.title}
-                              onChange={(e) => setNewPost({...newPost, title: e.target.value})}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
-                              placeholder="Title"
-                            />
-                            <textarea 
-                              rows={3}
-                              value={newPost.content}
-                              onChange={(e) => setNewPost({...newPost, content: e.target.value})}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
-                              placeholder="Description"
-                            />
-                            <div className="relative group/upload">
-                              <input 
-                                type="text"
-                                value={newPost.image_url}
-                                onChange={(e) => setNewPost({...newPost, image_url: e.target.value})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-12"
-                                placeholder="Image URL (or upload below)"
-                              />
-                              <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
-                                <input 
-                                  type="file" 
-                                  className="hidden" 
-                                  accept="image/*"
-                                  onChange={handleFileUpload}
-                                  disabled={isUploading}
+                      {/* Settings Module */}
+                      {adminModule === 'settings' && (
+                        <div className="space-y-8 max-w-2xl">
+                          <form onSubmit={handleUpdateSettings} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Site Title</label>
+                                <input
+                                  type="text"
+                                  value={settings.site_title}
+                                  onChange={(e) => setSettings({ ...settings, site_title: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
                                 />
-                                {isUploading ? (
-                                  <Activity className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Upload className="w-4 h-4" />
-                                )}
-                              </label>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Profile Image</label>
+                                <div className="relative group/upload">
+                                  <input
+                                    type="text"
+                                    value={settings.profile_image}
+                                    onChange={(e) => setSettings({ ...settings, profile_image: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-10"
+                                  />
+                                  <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/*"
+                                      onChange={(e) => handleSettingFileUpload('profile_image', e)}
+                                    />
+                                    <Upload className="w-4 h-4" />
+                                  </label>
+                                </div>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <select 
-                                value={newPost.status}
-                                onChange={(e) => setNewPost({...newPost, status: e.target.value as any})}
-                                className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                              >
-                                <option value="publish">Public</option>
-                                <option value="private">Private</option>
-                              </select>
-                              <input 
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Hero Title</label>
+                              <input
                                 type="text"
-                                value={newPost.meta.tech_stack}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, tech_stack: e.target.value}})}
-                                className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="Tech Stack"
+                                value={settings.hero_title}
+                                onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
                               />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1711,18 +1777,152 @@ business impact through high-quality, testable code.
                             <button 
                               type="submit"
                               disabled={isSubmitting}
-                              className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                              className="bg-emerald-500 text-black font-bold px-8 py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center gap-2"
                             >
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingId ? 'Update' : 'Publish'}
+                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
+                              Save All Settings
                             </button>
                           </form>
                         </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Existing Items</h3>
-                            <div className="relative">
-                              <input 
+                      )}
+
+                      {/* Projects & Snippets Module */}
+                      {(adminModule === 'projects' || adminModule === 'snippets') && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingId ? 'Edit Item' : 'Create New'}
+                            </h3>
+                            <form onSubmit={handleCreatePost} className="space-y-4">
+                              <input
+                                required
+                                type="text"
+                                value={newPost.title}
+                                onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="Title"
+                              />
+                              <textarea
+                                rows={3}
+                                value={newPost.content}
+                                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="Description"
+                              />
+                              <div className="relative group/upload">
+                                <input
+                                  type="text"
+                                  value={newPost.image_url}
+                                  onChange={(e) => setNewPost({ ...newPost, image_url: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-12"
+                                  placeholder="Image URL (or upload below)"
+                                />
+                                <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={isUploading}
+                                  />
+                                  {isUploading ? (
+                                    <Activity className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Upload className="w-4 h-4" />
+                                  )}
+                                </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <select
+                                  value={newPost.status}
+                                  onChange={(e) => setNewPost({ ...newPost, status: e.target.value as any })}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                >
+                                  <option value="publish">Public</option>
+                                  <option value="private">Private</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={newPost.meta.tech_stack}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, tech_stack: e.target.value } })}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="Tech Stack"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={newPost.meta.github_url}
+                                onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, github_url: e.target.value } })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                placeholder="GitHub URL"
+                              />
+                              <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                              >
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingId ? 'Update' : 'Publish'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Existing Items</h3>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Search..."
+                                  value={searchTerm}
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {(adminModule === 'projects' ? projects : snippets)
+                                .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(post => (
+                                  <div key={post.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="truncate flex-1 mr-4">
+                                      <h4 className="text-sm font-bold truncate">{post.title}</h4>
+                                      <p className="text-[10px] text-zinc-500">{post.status}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Experience Module */}
+                      {adminModule === 'experience' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingExpId ? 'Edit Experience' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateExperience} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newExperience.company} onChange={(e) => setNewExperience({ ...newExperience, company: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Company" />
+                                <input required type="text" value={newExperience.role} onChange={(e) => setNewExperience({ ...newExperience, role: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Role" />
+                              </div>
+                              <input required type="text" value={newExperience.period} onChange={(e) => setNewExperience({ ...newExperience, period: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Period" />
+                              <textarea required rows={3} value={newExperience.description} onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Description" />
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingExpId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingExpId ? 'Update' : 'Add Experience'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Experience List</h3>
+                              <input
                                 type="text"
                                 placeholder="Search..."
                                 value={searchTerm}
@@ -1730,238 +1930,186 @@ business impact through high-quality, testable code.
                                 className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
                               />
                             </div>
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {(adminModule === 'projects' ? projects : snippets)
-                              .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(post => (
-                              <div key={post.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="truncate flex-1 mr-4">
-                                  <h4 className="text-sm font-bold truncate">{post.title}</h4>
-                                  <p className="text-[10px] text-zinc-500">{post.status}</p>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Experience Module */}
-                    {adminModule === 'experience' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingExpId ? 'Edit Experience' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateExperience} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newExperience.company} onChange={(e) => setNewExperience({...newExperience, company: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Company" />
-                              <input required type="text" value={newExperience.role} onChange={(e) => setNewExperience({...newExperience, role: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Role" />
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {experience
+                                .filter(exp => exp.role.toLowerCase().includes(searchTerm.toLowerCase()) || exp.company.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(exp => (
+                                  <div key={exp.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="truncate flex-1 mr-4">
+                                      <h4 className="text-sm font-bold truncate">{exp.role} @ {exp.company}</h4>
+                                      <p className="text-[10px] text-zinc-500">{exp.period}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingExpId(exp.id); setNewExperience(exp); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteExperience(exp.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
                             </div>
-                            <input required type="text" value={newExperience.period} onChange={(e) => setNewExperience({...newExperience, period: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Period" />
-                            <textarea required rows={3} value={newExperience.description} onChange={(e) => setNewExperience({...newExperience, description: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Description" />
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingExpId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingExpId ? 'Update' : 'Add Experience'}
-                            </button>
-                          </form>
+                          </div>
                         </div>
+                      )}
+
+                      {/* Skills Module */}
+                      {adminModule === 'skills' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingSkillId ? 'Edit Skill' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateSkill} className="space-y-4">
+                              <select value={newSkill.category} onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value as any })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none">
+                                <option value="frontend">Frontend</option>
+                                <option value="backend">Backend</option>
+                                <option value="devops">DevOps</option>
+                                <option value="additional">Additional</option>
+                              </select>
+                              <input required type="text" value={newSkill.name} onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Skill Name" />
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingSkillId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingSkillId ? 'Update' : 'Add Skill'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Skills List</h3>
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                              />
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {skills
+                                .filter(skill => skill.name.toLowerCase().includes(searchTerm.toLowerCase()) || skill.category.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(skill => (
+                                  <div key={skill.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="flex items-center gap-3 flex-1 mr-4">
+                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 uppercase">{skill.category}</span>
+                                      <h4 className="text-sm font-bold truncate">{skill.name}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingSkillId(skill.id); setNewSkill(skill); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteSkill(skill.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Certifications Module */}
+                      {adminModule === 'certifications' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingCertId ? 'Edit Certification' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateCertification} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newCertification.name} onChange={(e) => setNewCertification({ ...newCertification, name: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert Name" />
+                                <input required type="text" value={newCertification.issuer} onChange={(e) => setNewCertification({ ...newCertification, issuer: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Issuer" />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newCertification.date} onChange={(e) => setNewCertification({ ...newCertification, date: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Date (e.g. 2024)" />
+                                <input type="text" value={newCertification.url || ''} onChange={(e) => setNewCertification({ ...newCertification, url: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert URL (optional)" />
+                              </div>
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingCertId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingCertId ? 'Update' : 'Add Certification'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Certifications List</h3>
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                              />
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {certifications
+                                .filter(cert => cert.name.toLowerCase().includes(searchTerm.toLowerCase()) || cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(cert => (
+                                  <div key={cert.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="flex items-center gap-3 flex-1 mr-4">
+                                      <Award className="w-4 h-4 text-emerald-500" />
+                                      <div className="truncate">
+                                        <h4 className="text-sm font-bold truncate">{cert.name}</h4>
+                                        <p className="text-[10px] text-zinc-500">{cert.issuer} • {cert.date}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingCertId(cert.id); setNewCertification(cert); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteCertification(cert.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Messages Module */}
+                      {adminModule === 'messages' && (
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Experience List</h3>
-                            <input 
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Inbox</h3>
+                            <input
                               type="text"
-                              placeholder="Search..."
+                              placeholder="Search messages..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-xs outline-none focus:border-emerald-500 w-64"
                             />
                           </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {experience
-                              .filter(exp => exp.role.toLowerCase().includes(searchTerm.toLowerCase()) || exp.company.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(exp => (
-                              <div key={exp.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="truncate flex-1 mr-4">
-                                  <h4 className="text-sm font-bold truncate">{exp.role} @ {exp.company}</h4>
-                                  <p className="text-[10px] text-zinc-500">{exp.period}</p>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingExpId(exp.id); setNewExperience(exp); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteExperience(exp.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Skills Module */}
-                    {adminModule === 'skills' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingSkillId ? 'Edit Skill' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateSkill} className="space-y-4">
-                            <select value={newSkill.category} onChange={(e) => setNewSkill({...newSkill, category: e.target.value as any})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none">
-                              <option value="frontend">Frontend</option>
-                              <option value="backend">Backend</option>
-                              <option value="devops">DevOps</option>
-                              <option value="additional">Additional</option>
-                            </select>
-                            <input required type="text" value={newSkill.name} onChange={(e) => setNewSkill({...newSkill, name: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Skill Name" />
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingSkillId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingSkillId ? 'Update' : 'Add Skill'}
-                            </button>
-                          </form>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Skills List</h3>
-                            <input 
-                              type="text"
-                              placeholder="Search..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
-                            />
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {skills
-                              .filter(skill => skill.name.toLowerCase().includes(searchTerm.toLowerCase()) || skill.category.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(skill => (
-                              <div key={skill.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="flex items-center gap-3 flex-1 mr-4">
-                                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 uppercase">{skill.category}</span>
-                                  <h4 className="text-sm font-bold truncate">{skill.name}</h4>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingSkillId(skill.id); setNewSkill(skill); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteSkill(skill.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Certifications Module */}
-                    {adminModule === 'certifications' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingCertId ? 'Edit Certification' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateCertification} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newCertification.name} onChange={(e) => setNewCertification({...newCertification, name: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert Name" />
-                              <input required type="text" value={newCertification.issuer} onChange={(e) => setNewCertification({...newCertification, issuer: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Issuer" />
+                          {messages.length === 0 ? (
+                            <div className="text-center py-12 text-zinc-500 italic">No messages yet.</div>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                              {messages
+                                .filter(msg => msg.name.toLowerCase().includes(searchTerm.toLowerCase()) || msg.subject.toLowerCase().includes(searchTerm.toLowerCase()) || msg.message.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .sort((a, b) => b.id - a.id)
+                                .map(msg => (
+                                  <div key={msg.id} className={`p-6 rounded-2xl border transition-all ${msg.status === 'unread' ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-zinc-800/30 border-zinc-700/30'}`}>
+                                    <div className="flex items-center justify-between mb-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-2 h-2 rounded-full ${msg.status === 'unread' ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
+                                        <h4 className="font-bold text-zinc-100">{msg.name}</h4>
+                                        <span className="text-[10px] text-zinc-500 font-mono">{new Date(msg.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {msg.status === 'unread' && (
+                                          <button onClick={() => handleMarkAsRead(msg.id)} className="p-2 hover:bg-emerald-500/10 rounded-lg text-emerald-500"><CheckCircle2 className="w-4 h-4" /></button>
+                                        )}
+                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 hover:bg-red-500/10 rounded-lg text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mb-2 font-bold uppercase tracking-widest">{msg.subject}</p>
+                                    <p className="text-zinc-400 text-sm leading-relaxed mb-4">{msg.message}</p>
+                                    <div className="pt-4 border-t border-zinc-800/50">
+                                      <a href={`mailto:${msg.email}`} className="text-xs text-emerald-500 hover:underline">{msg.email}</a>
+                                    </div>
+                                  </div>
+                                ))}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newCertification.date} onChange={(e) => setNewCertification({...newCertification, date: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Date (e.g. 2024)" />
-                              <input type="text" value={newCertification.url || ''} onChange={(e) => setNewCertification({...newCertification, url: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert URL (optional)" />
-                            </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingCertId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingCertId ? 'Update' : 'Add Certification'}
-                            </button>
-                          </form>
+                          )}
                         </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Certifications List</h3>
-                            <input 
-                              type="text"
-                              placeholder="Search..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
-                            />
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {certifications
-                              .filter(cert => cert.name.toLowerCase().includes(searchTerm.toLowerCase()) || cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(cert => (
-                              <div key={cert.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="flex items-center gap-3 flex-1 mr-4">
-                                  <Award className="w-4 h-4 text-emerald-500" />
-                                  <div className="truncate">
-                                    <h4 className="text-sm font-bold truncate">{cert.name}</h4>
-                                    <p className="text-[10px] text-zinc-500">{cert.issuer} • {cert.date}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingCertId(cert.id); setNewCertification(cert); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteCertification(cert.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Messages Module */}
-                    {adminModule === 'messages' && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Inbox</h3>
-                          <input 
-                            type="text"
-                            placeholder="Search messages..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-xs outline-none focus:border-emerald-500 w-64"
-                          />
-                        </div>
-                        {messages.length === 0 ? (
-                          <div className="text-center py-12 text-zinc-500 italic">No messages yet.</div>
-                        ) : (
-                          <div className="grid grid-cols-1 gap-4">
-                            {messages
-                              .filter(msg => msg.name.toLowerCase().includes(searchTerm.toLowerCase()) || msg.subject.toLowerCase().includes(searchTerm.toLowerCase()) || msg.message.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .sort((a, b) => b.id - a.id)
-                              .map(msg => (
-                              <div key={msg.id} className={`p-6 rounded-2xl border transition-all ${msg.status === 'unread' ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-zinc-800/30 border-zinc-700/30'}`}>
-                                <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className={`w-2 h-2 rounded-full ${msg.status === 'unread' ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
-                                    <h4 className="font-bold text-zinc-100">{msg.name}</h4>
-                                    <span className="text-[10px] text-zinc-500 font-mono">{new Date(msg.created_at).toLocaleDateString()}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {msg.status === 'unread' && (
-                                      <button onClick={() => handleMarkAsRead(msg.id)} className="p-2 hover:bg-emerald-500/10 rounded-lg text-emerald-500"><CheckCircle2 className="w-4 h-4" /></button>
-                                    )}
-                                    <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 hover:bg-red-500/10 rounded-lg text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                  </div>
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mb-2 font-bold uppercase tracking-widest">{msg.subject}</p>
-                                <p className="text-zinc-400 text-sm leading-relaxed mb-4">{msg.message}</p>
-                                <div className="pt-4 border-t border-zinc-800/50">
-                                  <a href={`mailto:${msg.email}`} className="text-xs text-emerald-500 hover:underline">{msg.email}</a>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </motion.div>
-        )}
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -1974,7 +2122,7 @@ business impact through high-quality, testable code.
               Backend Logic
             </h3>
             <p className="text-sm text-zinc-500 leading-relaxed">
-              Simulated WordPress CPTs using SQLite. Demonstrates schema design, 
+              Simulated WordPress CPTs using SQLite. Demonstrates schema design,
               custom fields (post_meta), and RESTful endpoint architecture.
             </p>
           </div>
@@ -1984,7 +2132,7 @@ business impact through high-quality, testable code.
               API Strategy
             </h3>
             <p className="text-sm text-zinc-500 leading-relaxed">
-              Decoupled architecture using Express.js. Middleware handles 
+              Decoupled architecture using Express.js. Middleware handles
               request logging and data normalization before serving to the client.
             </p>
           </div>
@@ -1994,12 +2142,29 @@ business impact through high-quality, testable code.
               Frontend Tech
             </h3>
             <p className="text-sm text-zinc-500 leading-relaxed">
-              React 19 with Motion for fluid transitions. Tailwind CSS 4 
+              React 19 with Motion for fluid transitions. Tailwind CSS 4
               for a high-density, professional developer aesthetic.
             </p>
           </div>
         </div>
       </footer>
+
+      {/* AI Interview Assistant */}
+      <AIChatAssistant
+        portfolioData={{
+          projects,
+          experience,
+          skills,
+          certifications,
+          settings
+        }}
+      />
+      {/* Project Deep Dive Modal */}
+      <ProjectDeepDive
+        project={selectedProject}
+        isOpen={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+      />
     </div>
   );
 }
