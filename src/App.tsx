@@ -1692,13 +1692,22 @@ business impact through high-quality, testable code.
                                 placeholder="Tech Stack"
                               />
                             </div>
-                            <input 
-                              type="text"
-                              value={newPost.meta.github_url}
-                              onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                              placeholder="GitHub URL"
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <input 
+                                type="text"
+                                value={newPost.meta.project_url}
+                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                placeholder="Project Live URL (Domain)"
+                              />
+                              <input 
+                                type="text"
+                                value={newPost.meta.github_url}
+                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                placeholder="GitHub URL"
+                              />
+                            </div>
                             <button 
                               type="submit"
                               disabled={isSubmitting}
