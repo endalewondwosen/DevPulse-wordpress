@@ -367,7 +367,7 @@ export default function App() {
         type: 'project',
         status: 'publish',
         image_url: '',
-        meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+        meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
       });
       setEditingId(null);
       fetchData();
@@ -727,7 +727,11 @@ export default function App() {
         github_url: post.meta.github_url || '',
         project_url: post.meta.project_url || '',
         tech_stack: post.meta.tech_stack || '',
-        language: post.meta.language || ''
+        language: post.meta.language || '',
+        challenge: post.meta.challenge || '',
+        solution: post.meta.solution || '',
+        impact: post.meta.impact || '',
+        architecture: post.meta.architecture || ''
       }
     });
     // Scroll to form
