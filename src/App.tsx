@@ -84,7 +84,7 @@ export default function App() {
   const [settings, setSettings] = useState<Record<string, string>>({
     profile_image: '/profile.jpg',
     resume_url: '/resume.pdf',
-    site_title: 'DevPulse Portfolio',
+    site_title: 'Wondwosen Endale Portifolio',
     hero_title: 'Architecting Digital Excellence',
     hero_subtitle: 'Full Stack Engineer & System Architect'
   });
