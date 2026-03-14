@@ -297,14 +297,10 @@ export default function App() {
     }
   };
 
-  const handlePostClick = async (post: Post) => {
+  const handlePostClick = async (id: number) => {
     // Trigger the logging middleware on the server
-    await apiFetch(`/api/posts/${post.id}`);
+    await apiFetch(`/api/posts/${id}`);
     fetchData(); // Refresh stats
-
-    if (post.type === 'project') {
-      setSelectedProject(post);
-    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -1403,7 +1399,7 @@ export default function App() {
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onClick={() => handlePostClick(project)}
+                  onClick={() => handlePostClick(project.id)}
                 />
               ))}
             </motion.div>
@@ -1421,7 +1417,7 @@ export default function App() {
                 <SnippetItem
                   key={snippet.id}
                   snippet={snippet}
-                  onClick={() => handlePostClick(snippet)}
+                  onClick={() => handlePostClick(snippet.id)}
                 />
               ))}
             </motion.div>
