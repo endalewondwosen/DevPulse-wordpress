@@ -298,6 +298,11 @@ export default function App() {
   };
 
   const handlePostClick = async (id: number) => {
+    // Find the project by ID
+    const project = projects.find(p => p.id === id);
+    if (project) {
+      setSelectedProject(project);
+    }
     // Trigger the logging middleware on the server
     await apiFetch(`/api/posts/${id}`);
     fetchData(); // Refresh stats
