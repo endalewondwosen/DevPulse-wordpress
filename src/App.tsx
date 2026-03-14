@@ -110,7 +110,11 @@ export default function App() {
       github_url: '',
       project_url: '',
       tech_stack: '',
-      language: ''
+      language: '',
+      challenge: '',
+      solution: '',
+      impact: '',
+      architecture: ''
     }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -738,7 +742,7 @@ export default function App() {
       type: 'project',
       status: 'publish',
       image_url: '',
-      meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+      meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
     });
   };
 
@@ -1521,7 +1525,7 @@ export default function App() {
                               setEditingSkillId(null);
                               setEditingCertId(null);
                               // Reset forms
-                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '' } });
+                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
                               setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
@@ -1868,21 +1872,48 @@ export default function App() {
                                 />
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <input 
-                                type="text"
-                                value={newPost.meta.project_url}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="Project Live URL (Domain)"
-                              />
-                              <input 
-                                type="text"
-                                value={newPost.meta.github_url}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="GitHub URL"
-                              />
-                            </div>
+                                <input 
+                                  type="text"
+                                  value={newPost.meta.project_url}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="Project Live URL (Domain)"
+                                />
+                                <input 
+                                  type="text"
+                                  value={newPost.meta.github_url}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="GitHub URL"
+                                />
+                              </div>
+                              <div className="space-y-4">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Deep Dive Details</label>
+                                <textarea
+                                  value={newPost.meta.challenge || ''}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, challenge: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Challenge - What problem did you solve?"
+                                />
+                                <textarea
+                                  value={newPost.meta.solution || ''}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, solution: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Solution - How did you solve it?"
+                                />
+                                <textarea
+                                  value={newPost.meta.impact || ''}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, impact: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Impact - What was the business impact?"
+                                />
+                                <textarea
+                                  value={newPost.meta.architecture || ''}
+                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, architecture: e.target.value}})}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Architecture - Technical approach used"
+                                />
+                              </div>
                               <button
                                 type="submit"
                                 disabled={isSubmitting}
