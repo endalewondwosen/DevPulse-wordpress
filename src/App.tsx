@@ -647,13 +647,13 @@ export default function App() {
         body: formData
       });
       const uploadData = await processResponse(uploadRes);
-      
+
       if (!uploadData || !uploadData.url) {
         throw new Error('Upload failed - no URL returned');
       }
 
       const newUrl = uploadData.url;
-      
+
       // Verify the file exists by trying to access it
       try {
         const testRes = await fetch(newUrl, { method: 'HEAD' });
@@ -1065,7 +1065,8 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4"
               >
-                Headless <span className="text-emerald-500">Architecture</span>
+                Engineering <span className="text-emerald-500">Scalable Systems
+                </span>
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -1073,8 +1074,7 @@ export default function App() {
                 transition={{ delay: 0.1 }}
                 className="text-zinc-400 text-xl leading-relaxed"
               >
-                A professional showcase of decoupled content management.
-                WordPress-style API logic powering a high-performance React interface.
+                A professional showcase of modern full-stack architecture. Focused on performance, maintainability, and building robust digital products that drive real-world impact.
               </motion.p>
             </div>
 
@@ -1892,17 +1892,17 @@ export default function App() {
                                 />
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input 
+                                <input
                                   type="text"
                                   value={newPost.meta.project_url}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, project_url: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
                                   placeholder="Project Live URL (Domain)"
                                 />
-                                <input 
+                                <input
                                   type="text"
                                   value={newPost.meta.github_url}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, github_url: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
                                   placeholder="GitHub URL"
                                 />
@@ -1911,25 +1911,25 @@ export default function App() {
                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Deep Dive Details</label>
                                 <textarea
                                   value={newPost.meta.challenge || ''}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, challenge: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, challenge: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
                                   placeholder="Challenge - What problem did you solve?"
                                 />
                                 <textarea
                                   value={newPost.meta.solution || ''}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, solution: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, solution: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
                                   placeholder="Solution - How did you solve it?"
                                 />
                                 <textarea
                                   value={newPost.meta.impact || ''}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, impact: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, impact: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
                                   placeholder="Impact - What was the business impact?"
                                 />
                                 <textarea
                                   value={newPost.meta.architecture || ''}
-                                  onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, architecture: e.target.value}})}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, architecture: e.target.value } })}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
                                   placeholder="Architecture - Technical approach used"
                                 />
