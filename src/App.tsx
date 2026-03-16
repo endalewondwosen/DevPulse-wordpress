@@ -640,17 +640,31 @@ export default function App() {
     formData.append('file', file);
 
     try {
-      const res = await apiFetch('/api/upload', {
+      // Upload file first
+      const uploadRes = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
-      const data = await processResponse(res);
+      const uploadData = await processResponse(uploadRes);
+      
+      if (!uploadData || !uploadData.url) {
+        throw new Error('Upload failed - no URL returned');
+      }
 
-      const newUrl = data.url;
-      setSettings(prev => ({ ...prev, [key]: newUrl }));
+      const newUrl = uploadData.url;
+      
+      // Verify the file exists by trying to access it
+      try {
+        const testRes = await fetch(newUrl, { method: 'HEAD' });
+        if (!testRes.ok) {
+          throw new Error('Uploaded file not accessible');
+        }
+      } catch (verifyError) {
+        throw new Error('File upload verification failed');
+      }
 
-      // Auto-save setting
+      // Save to settings only after verifying file exists
       await apiFetch('/api/settings', {
         method: 'POST',
         headers: {
@@ -660,7 +674,9 @@ export default function App() {
         body: JSON.stringify({ [key]: newUrl })
       });
 
-      setNotification({ message: `${key.replace('_', ' ')} updated`, type: 'success' });
+      // Update local state only after both operations succeed
+      setSettings(prev => ({ ...prev, [key]: newUrl }));
+      setNotification({ message: `${key.replace('_', ' ')} updated successfully`, type: 'success' });
     } catch (error: any) {
       console.error("Setting upload error:", error);
       setNotification({ message: error.message || "Upload failed", type: 'error' });
