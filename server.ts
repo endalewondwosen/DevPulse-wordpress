@@ -286,7 +286,7 @@ async function initDb() {
   const settingsCount = parseInt(settingsCountRes.count);
   if (settingsCount === 0) {
     const defaultSettings = [
-      { key: 'profile_image', value: '/profile.jpg' },
+      { key: 'profile_image', value: '/profile.png' },
       { key: 'resume_url', value: '/resume.pdf' },
       { key: 'site_title', value: 'DevPulse Portfolio' },
       { key: 'hero_title', value: 'Architecting Digital Excellence' },
