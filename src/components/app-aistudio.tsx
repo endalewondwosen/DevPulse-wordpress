@@ -70,7 +70,7 @@
 //   const [settings, setSettings] = useState<Record<string, string>>({
 //     profile_image: '/profile.jpg',
 //     resume_url: '/resume.pdf',
-//     site_title: 'DevPulse Portfolio',
+//     site_title: 'Wondwosen Portfolio',
 //     hero_title: 'Architecting Digital Excellence',
 //     hero_subtitle: 'Full Stack Engineer & System Architect'
 //   });
@@ -153,7 +153,7 @@
 //   }, [notification]);
 
 //   useEffect(() => {
-//     document.title = settings.site_title || 'DevPulse Portfolio';
+//     document.title = settings.site_title || 'Wondwosen Portfolio';
 //   }, [settings.site_title]);
 
 //   useEffect(() => {
@@ -799,7 +799,7 @@
 //             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
 //               <Terminal className="w-5 h-5 text-black" />
 //             </div>
-//             <span className="font-bold tracking-tight text-xl">{settings.site_title || 'DevPulse'}</span>
+//             <span className="font-bold tracking-tight text-xl">{settings.site_title || 'Wondwosen'}</span>
 //           </div>
           
 //           {/* Desktop Nav */}
@@ -1038,7 +1038,7 @@
 //                 animate={{ opacity: 1, y: 0 }}
 //                 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4"
 //               >
-//                 Headless <span className="text-emerald-500">Architecture</span>
+//                 Engineering <span className="text-emerald-500">Scalable Systems</span>
 //               </motion.h1>
 //               <motion.p 
 //                 initial={{ opacity: 0, y: 20 }}
@@ -1046,8 +1046,8 @@
 //                 transition={{ delay: 0.1 }}
 //                 className="text-zinc-400 text-xl leading-relaxed"
 //               >
-//                 A professional showcase of decoupled content management. 
-//                 WordPress-style API logic powering a high-performance React interface.
+//                 A professional showcase of modern full-stack architecture. 
+//                 Focused on performance, maintainability, and building robust digital products that drive real-world impact.
 //               </motion.p>
 //             </div>
 
@@ -2145,37 +2145,103 @@
 //       </main>
 
 //       {/* Footer Info */}
-//       <footer className="border-t border-zinc-800 mt-24 py-12 bg-zinc-900/30">
-//         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
-//           <div>
-//             <h3 className="font-bold mb-4 flex items-center gap-2">
-//               <Box className="w-4 h-4 text-emerald-500" />
-//               Backend Logic
-//             </h3>
-//             <p className="text-sm text-zinc-500 leading-relaxed">
-//               Simulated WordPress CPTs using SQLite. Demonstrates schema design, 
-//               custom fields (post_meta), and RESTful endpoint architecture.
-//             </p>
+//       <footer className="border-t border-zinc-800 mt-24 pt-16 pb-8 bg-zinc-900/30">
+//         <div className="max-w-6xl mx-auto px-6">
+//           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+//             <div className="col-span-1 md:col-span-2">
+//               <div className="flex items-center gap-2 mb-4">
+//                 <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+//                   <Terminal className="w-5 h-5 text-zinc-950" />
+//                 </div>
+//                 <span className="font-bold tracking-tight text-xl">{settings.site_title || 'Wondwosen'}</span>
+//               </div>
+//               <p className="text-zinc-500 text-sm leading-relaxed max-w-sm mb-6">
+//                 {settings.hero_subtitle || 'Full Stack Engineer focused on building scalable, high-performance web applications and robust system architectures.'}
+//               </p>
+//               <div className="flex items-center gap-4">
+//                 <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+//                   <Github className="w-5 h-5" />
+//                 </a>
+//                 <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+//                   <Linkedin className="w-5 h-5" />
+//                 </a>
+//                 <a href={`mailto:${settings.contact_email || 'hello@example.com'}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+//                   <Mail className="w-5 h-5" />
+//                 </a>
+//               </div>
+//             </div>
+
+//             <div>
+//               <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Navigation</h4>
+//               <ul className="space-y-4">
+//                 {['home', 'projects', 'snippets'].map((tab) => (
+//                   <li key={tab}>
+//                     <button 
+//                       onClick={() => {
+//                         setActiveTab(tab as any);
+//                         window.scrollTo({ top: 0, behavior: 'smooth' });
+//                       }}
+//                       className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors capitalize"
+//                     >
+//                       {tab}
+//                     </button>
+//                   </li>
+//                 ))}
+//                 <li>
+//                   <button 
+//                     onClick={() => setShowLogin(true)}
+//                     className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors"
+//                   >
+//                     Admin Portal
+//                   </button>
+//                 </li>
+//               </ul>
+//             </div>
+
+//             <div>
+//               <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Technical Expertise</h4>
+//               <div className="space-y-6">
+//                 <div className="flex gap-3">
+//                   <Box className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+//                   <div>
+//                     <p className="text-xs font-bold text-zinc-300 mb-1">Full Stack Development</p>
+//                     <p className="text-[10px] text-zinc-500 leading-relaxed">End-to-end scalable solutions with modern frameworks</p>
+//                   </div>
+//                 </div>
+//                 <div className="flex gap-3">
+//                   <Cpu className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+//                   <div>
+//                     <p className="text-xs font-bold text-zinc-300 mb-1">Architecture Design</p>
+//                     <p className="text-[10px] text-zinc-500 leading-relaxed">Designing robust, maintainable, and high-performance systems</p>
+//                   </div>
+//                 </div>
+//                 <div className="flex gap-3">
+//                   <Layout className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+//                   <div>
+//                     <p className="text-xs font-bold text-zinc-300 mb-1">UI/UX Engineering</p>
+//                     <p className="text-[10px] text-zinc-500 leading-relaxed">Creating fluid, accessible, and high-performance user interfaces</p>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
 //           </div>
-//           <div>
-//             <h3 className="font-bold mb-4 flex items-center gap-2">
-//               <Cpu className="w-4 h-4 text-emerald-500" />
-//               API Strategy
-//             </h3>
-//             <p className="text-sm text-zinc-500 leading-relaxed">
-//               Decoupled architecture using Express.js. Middleware handles 
-//               request logging and data normalization before serving to the client.
+
+//           <div className="pt-8 border-t border-zinc-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
+//             <p className="text-[10px] text-zinc-600 font-mono">
+//               &copy; {new Date().getFullYear()} {settings.hero_title?.split('.')[0] || 'Wondwosen Endale'}. All rights reserved.
 //             </p>
-//           </div>
-//           <div>
-//             <h3 className="font-bold mb-4 flex items-center gap-2">
-//               <Layout className="w-4 h-4 text-emerald-500" />
-//               Frontend Tech
-//             </h3>
-//             <p className="text-sm text-zinc-500 leading-relaxed">
-//               React 19 with Motion for fluid transitions. Tailwind CSS 4 
-//               for a high-density, professional developer aesthetic.
-//             </p>
+//             <div className="flex items-center gap-6">
+//               <p className="text-[10px] text-zinc-600 flex items-center gap-2">
+//                 <Activity className="w-3 h-3 text-emerald-500" />
+//                 System Status: <span className="text-emerald-500">Operational</span>
+//               </p>
+//               <button 
+//                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+//                 className="text-[10px] text-zinc-500 hover:text-emerald-500 transition-colors flex items-center gap-1"
+//               >
+//                 Back to Top <ChevronRight className="w-3 h-3 -rotate-90" />
+//               </button>
+//             </div>
 //           </div>
 //         </div>
 //       </footer>
