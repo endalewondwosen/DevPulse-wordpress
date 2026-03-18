@@ -401,6 +401,63 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Debug endpoint to check database structure and data
+  app.get("/api/debug/posts", async (req, res) => {
+    try {
+      // Check table structure
+      const structure = await query(`
+        SELECT column_name, data_type, is_nullable, column_default 
+        FROM information_schema.columns 
+        WHERE table_name = 'posts' 
+        ORDER BY ordinal_position
+      `);
+      
+      // Check actual data
+      const data = await query("SELECT id, title, image_url, sort_order FROM posts ORDER BY id LIMIT 10");
+      
+      res.json({
+        database: isPostgres ? 'PostgreSQL' : 'SQLite',
+        structure,
+        data,
+        count: data.length
+      });
+    } catch (error) {
+      console.error("Debug error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Debug endpoint to check uploads directory
+  app.get("/api/debug/uploads", (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const uploadsDir = path.join(__dirname, "public", "uploads");
+      let files = [];
+      let dirExists = false;
+      
+      try {
+        files = fs.readdirSync(uploadsDir);
+        dirExists = true;
+      } catch (err) {
+        dirExists = false;
+      }
+      
+      res.json({
+        uploadsDir,
+        dirExists,
+        files: files.map(file => ({
+          name: file,
+          path: path.join(uploadsDir, file),
+          url: `/uploads/${file}`
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Auth Middleware
   const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
