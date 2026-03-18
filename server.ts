@@ -570,6 +570,17 @@ async function startServer() {
 
     const { title, content, type, status, image_url, meta, sort_order } = req.body;
     
+    // Debug logging
+    console.log("POST /api/posts received:", {
+      title,
+      content,
+      type,
+      status,
+      image_url,
+      sort_order,
+      meta
+    });
+    
     if (!title || !type) {
       return res.status(400).json({ error: "Title and Type are required" });
     }
@@ -606,6 +617,18 @@ async function startServer() {
 
     const { id } = req.params;
     const { title, content, type, status, image_url, meta, sort_order } = req.body;
+    
+    // Debug logging
+    console.log("PUT /api/posts received:", {
+      id,
+      title,
+      content,
+      type,
+      status,
+      image_url,
+      sort_order,
+      meta
+    });
 
     try {
       const result = await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5, sort_order = $6 WHERE id = $7", [title, content || "", type, status || "publish", image_url || null, sort_order || 0, id]);
