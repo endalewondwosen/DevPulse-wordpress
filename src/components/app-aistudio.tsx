@@ -37,7 +37,9 @@
 //   Layers,
 //   Upload,
 //   Sun,
-//   Moon
+//   Moon,
+//   ChevronUp,
+//   ChevronDown
 // } from 'lucide-react';
 // import { 
 //   BarChart, 
@@ -57,6 +59,7 @@
 // import { SnippetItem } from './components/SnippetItem';
 // import { AIChatAssistant } from './components/AIChatAssistant';
 // import { ProjectDeepDive } from './components/ProjectDeepDive';
+// import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/SkeletonLoader';
 // import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 // export default function App() {
@@ -75,6 +78,7 @@
 //     hero_subtitle: 'Full Stack Engineer & System Architect'
 //   });
 //   const [loading, setLoading] = useState(true);
+//   const [isWakingUp, setIsWakingUp] = useState(false);
 //   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
 //   const [searchQuery, setSearchQuery] = useState('');
 //   const [token, setToken] = useState<string | null>(localStorage.getItem('devpulse_token'));
@@ -92,6 +96,7 @@
 //     type: 'project' as 'project' | 'snippet',
 //     status: 'publish' as 'publish' | 'private',
 //     image_url: '',
+//     sort_order: 0,
 //     meta: {
 //       github_url: '',
 //       project_url: '',
@@ -198,8 +203,10 @@
 //     return () => observer.disconnect();
 //   }, [activeTab]);
 
-//   const fetchData = async () => {
-//     setLoading(true);
+//   const fetchData = async (retryCount = 0) => {
+//     if (retryCount === 0) setLoading(true);
+//     if (retryCount > 0) setIsWakingUp(true);
+
 //     try {
 //       const headers: any = {};
 //       if (token) {
@@ -238,14 +245,24 @@
 //       setStats(statData);
 //       setSettings(settingsData);
 //       setMessages(msgData);
+//       setIsWakingUp(false);
 //     } catch (error: any) {
-//       console.error("Error fetching data:", error);
-//       // Only show notification if it's not a background refresh
+//       console.error(`Error fetching data (attempt ${retryCount + 1}):`, error);
+      
+//       // If it's a connection error or timeout, retry
+//       if (retryCount < 2) {
+//         console.log("Database might be sleeping, retrying in 3 seconds...");
+//         await new Promise(resolve => setTimeout(resolve, 3000));
+//         return fetchData(retryCount + 1);
+//       }
+
 //       if (activeTab !== 'admin') {
 //         setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
 //       }
 //     } finally {
-//       setLoading(false);
+//       if (retryCount === 0 || retryCount >= 2) {
+//         setLoading(false);
+//       }
 //     }
 //   };
 
@@ -349,9 +366,10 @@
 //       setNewPost({
 //         title: '',
 //         content: '',
-//         type: 'project',
+//         type: adminModule === 'projects' ? 'project' : 'snippet',
 //         status: 'publish',
 //         image_url: '',
+//         sort_order: 0,
 //         meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
 //       });
 //       setEditingId(null);
@@ -365,6 +383,46 @@
 //       setNotification({ message: error.message || "Failed to process request", type: 'error' });
 //     } finally {
 //       setIsSubmitting(false);
+//     }
+//   };
+
+//   const handleMovePost = async (id: number, direction: 'up' | 'down') => {
+//     if (!token) return;
+//     const list = adminModule === 'projects' ? projects : snippets;
+//     const index = list.findIndex(p => p.id === id);
+//     if (index === -1) return;
+
+//     const newIndex = direction === 'up' ? index - 1 : index + 1;
+//     if (newIndex < 0 || newIndex >= list.length) return;
+
+//     const currentPost = list[index];
+//     const targetPost = list[newIndex];
+
+//     if (!targetPost) return;
+
+//     try {
+//       const currentOrder = currentPost.sort_order;
+//       const targetOrder = targetPost.sort_order;
+
+//       // Swap them
+//       await Promise.all([
+//         fetch(`/api/posts/${currentPost.id}`, {
+//           method: 'PUT',
+//           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+//           body: JSON.stringify({ ...currentPost, sort_order: targetOrder })
+//         }),
+//         fetch(`/api/posts/${targetPost.id}`, {
+//           method: 'PUT',
+//           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+//           body: JSON.stringify({ ...targetPost, sort_order: currentOrder })
+//         })
+//       ]);
+
+//       fetchData();
+//       setNotification({ message: "Order updated", type: 'success' });
+//     } catch (error) {
+//       console.error('Error moving post:', error);
+//       setNotification({ message: "Failed to update order", type: 'error' });
 //     }
 //   };
 
@@ -708,6 +766,7 @@
 //       type: post.type,
 //       status: post.status,
 //       image_url: post.image_url || '',
+//       sort_order: post.sort_order || 0,
 //       meta: {
 //         github_url: post.meta.github_url || '',
 //         project_url: post.meta.project_url || '',
@@ -731,6 +790,7 @@
 //       type: 'project',
 //       status: 'publish',
 //       image_url: '',
+//       sort_order: 0,
 //       meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
 //     });
 //   };
@@ -1174,11 +1234,21 @@
 //                       {cat.desc}
 //                     </p>
 //                     <div className="flex flex-wrap gap-2">
-//                       {skills.filter(s => s.category === cat.id).map(s => (
-//                         <span key={s.id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 rounded-md text-zinc-400 border border-zinc-700">{s.name}</span>
-//                       ))}
-//                       {skills.filter(s => s.category === cat.id).length === 0 && (
-//                         <span className="text-[10px] text-zinc-600 italic">No skills added yet</span>
+//                       {loading ? (
+//                         <>
+//                           <GenericSkeleton width="w-16" height="h-4" />
+//                           <GenericSkeleton width="w-20" height="h-4" />
+//                           <GenericSkeleton width="w-14" height="h-4" />
+//                         </>
+//                       ) : (
+//                         <>
+//                           {skills.filter(s => s.category === cat.id).map(s => (
+//                             <span key={s.id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 rounded-md text-zinc-400 border border-zinc-700">{s.name}</span>
+//                           ))}
+//                           {skills.filter(s => s.category === cat.id).length === 0 && (
+//                             <span className="text-[10px] text-zinc-600 italic">No skills added yet</span>
+//                           )}
+//                         </>
 //                       )}
 //                     </div>
 //                   </div>
@@ -1192,7 +1262,20 @@
 //                   <div className="h-px flex-1 bg-zinc-800" />
 //                 </div>
 //                 <div className="space-y-8">
-//                   {experience.length === 0 ? (
+//                   {loading ? (
+//                     <div className="space-y-8">
+//                       {[1, 2].map(i => (
+//                         <div key={i} className="relative pl-8 border-l border-zinc-800">
+//                           <div className="absolute left-[-5px] top-2 w-2.5 h-2.5 rounded-full bg-zinc-800 animate-pulse" />
+//                           <div className="space-y-3">
+//                             <GenericSkeleton width="w-1/3" height="h-6" />
+//                             <GenericSkeleton width="w-1/4" height="h-4" />
+//                             <GenericSkeleton width="w-full" height="h-12" />
+//                           </div>
+//                         </div>
+//                       ))}
+//                     </div>
+//                   ) : experience.length === 0 ? (
 //                     <p className="text-zinc-500 italic">Experience history will appear here once added in admin.</p>
 //                   ) : (
 //                     experience.map((exp) => (
@@ -1217,7 +1300,15 @@
 //                   <div className="h-px flex-1 bg-zinc-800" />
 //                 </div>
 //                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//                   {certifications.length === 0 ? (
+//                   {loading ? (
+//                     [1, 2, 3].map(i => (
+//                       <div key={i} className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-4">
+//                         <div className="w-12 h-12 bg-zinc-800 animate-pulse rounded-xl" />
+//                         <GenericSkeleton width="w-3/4" height="h-6" />
+//                         <GenericSkeleton width="w-1/2" height="h-4" />
+//                       </div>
+//                     ))
+//                   ) : certifications.length === 0 ? (
 //                     <p className="text-zinc-500 italic col-span-full">Certifications will appear here once added in admin.</p>
 //                   ) : (
 //                     certifications.map((cert) => (
@@ -1368,13 +1459,22 @@
 //               exit={{ opacity: 0, x: 20 }}
 //               className="grid grid-cols-1 md:grid-cols-2 gap-6"
 //             >
-//               {projects.map((project) => (
-//                 <ProjectCard 
-//                   key={project.id} 
-//                   project={project} 
-//                   onClick={() => handlePostClick(project)}
-//                 />
-//               ))}
+//               {loading ? (
+//                 <>
+//                   <ProjectSkeleton />
+//                   <ProjectSkeleton />
+//                   <ProjectSkeleton />
+//                   <ProjectSkeleton />
+//                 </>
+//               ) : (
+//                 projects.map((project) => (
+//                   <ProjectCard 
+//                     key={project.id} 
+//                     project={project} 
+//                     onClick={() => handlePostClick(project)}
+//                   />
+//                 ))
+//               )}
 //             </motion.div>
 //           )}
 
@@ -1386,13 +1486,21 @@
 //               exit={{ opacity: 0, x: 20 }}
 //               className="space-y-4"
 //             >
-//               {snippets.map((snippet) => (
-//                 <SnippetItem 
-//                   key={snippet.id} 
-//                   snippet={snippet}
-//                   onClick={() => handlePostClick(snippet)}
-//                 />
-//               ))}
+//               {loading ? (
+//                 <>
+//                   <SnippetSkeleton />
+//                   <SnippetSkeleton />
+//                   <SnippetSkeleton />
+//                 </>
+//               ) : (
+//                 snippets.map((snippet) => (
+//                   <SnippetItem 
+//                     key={snippet.id} 
+//                     snippet={snippet}
+//                     onClick={() => handlePostClick(snippet)}
+//                   />
+//                 ))
+//               )}
 //             </motion.div>
 //           )}
 
@@ -1489,7 +1597,7 @@
 //                               setEditingSkillId(null);
 //                               setEditingCertId(null);
 //                               // Reset forms
-//                               setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
+//                               setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', sort_order: 0, meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
 //                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
 //                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
 //                               setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
@@ -1828,6 +1936,8 @@
 //                                   <p className="text-[10px] text-zinc-500">{post.status}</p>
 //                                 </div>
 //                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+//                                   <button onClick={() => handleMovePost(post.id, 'up')} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><ChevronUp className="w-3.5 h-3.5" /></button>
+//                                   <button onClick={() => handleMovePost(post.id, 'down')} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><ChevronDown className="w-3.5 h-3.5" /></button>
 //                                   <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
 //                                   <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
 //                                 </div>
@@ -2263,6 +2373,10 @@
 //         isOpen={!!selectedProject}
 //         onClose={() => setSelectedProject(null)}
 //       />
+
+//       <AnimatePresence>
+//         {isWakingUp && <WakingUpLoader />}
+//       </AnimatePresence>
 //     </div>
 //   );
 // }

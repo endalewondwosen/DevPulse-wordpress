@@ -108,6 +108,7 @@ export default function App() {
     type: 'project' as 'project' | 'snippet',
     status: 'publish' as 'publish' | 'private',
     image_url: '',
+    sort_order: 0,
     meta: {
       github_url: '',
       project_url: '',
@@ -369,6 +370,7 @@ export default function App() {
         type: adminModule === 'projects' ? 'project' : 'snippet',
         status: 'publish',
         image_url: '',
+        sort_order: 0,
         meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
       });
       setEditingId(null);
@@ -867,6 +869,7 @@ export default function App() {
       type: 'project',
       status: 'publish',
       image_url: '',
+      sort_order: 0,
       meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
     });
   };
@@ -1650,7 +1653,7 @@ export default function App() {
                               setEditingSkillId(null);
                               setEditingCertId(null);
                               // Reset forms
-                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
+                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', sort_order: 0, meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
                               setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
