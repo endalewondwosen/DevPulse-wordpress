@@ -454,7 +454,7 @@ async function startServer() {
   });
 
   // File Upload Route (Authenticated)
-  app.post("/api/upload", authenticateToken, upload.single('file'), (req, res) => {
+  app.post("/api/upload", authenticateToken, upload.single('image'), (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
