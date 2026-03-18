@@ -8,6 +8,8 @@ import {
   Layout,
   Activity,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Box,
   Cpu,
   Lock,
@@ -398,6 +400,59 @@ export default function App() {
     } catch (error: any) {
       console.error("Delete error:", error);
       setNotification({ message: error.message || "Failed to delete content", type: 'error' });
+    }
+  };
+
+  // Reordering Functions
+  const handleMovePost = async (id: number, direction: 'up' | 'down') => {
+    if (!token) return;
+    
+    const currentPosts = [...projects];
+    const index = currentPosts.findIndex(p => p.id === id);
+    
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (newIndex < 0 || newIndex >= currentPosts.length) return;
+    
+    // Swap items in array
+    const [movedItem] = currentPosts.splice(index, 1);
+    currentPosts.splice(newIndex, 0, movedItem);
+    
+    // Update sort_order values
+    const updatedPosts = currentPosts.map((post, idx) => ({
+      ...post,
+      sort_order: idx
+    }));
+    
+    setProjects(updatedPosts);
+    
+    // Update each item in the database
+    try {
+      for (const post of updatedPosts) {
+        await apiFetch(`/api/posts/${post.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: post.title,
+            content: post.content,
+            type: post.type,
+            status: post.status,
+            image_url: post.image_url || '',
+            meta: post.meta,
+            sort_order: post.sort_order
+          })
+        });
+      }
+      setNotification({ message: "Project order updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Reorder error:", error);
+      setNotification({ message: error.message || "Failed to update order", type: 'error' });
+      fetchData(); // Refresh to restore original order
     }
   };
 
@@ -1967,6 +2022,22 @@ export default function App() {
                                       <p className="text-[10px] text-zinc-500">{post.status}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button 
+                                        onClick={() => handleMovePost(post.id, 'up')} 
+                                        disabled={post.sort_order === 0}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move up"
+                                      >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button 
+                                        onClick={() => handleMovePost(post.id, 'down')} 
+                                        disabled={post.sort_order === projects.length - 1}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move down"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                      </button>
                                       <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
                                       <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                                     </div>
