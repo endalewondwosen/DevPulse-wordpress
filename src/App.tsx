@@ -366,7 +366,7 @@ export default function App() {
       setNewPost({
         title: '',
         content: '',
-        type: 'project',
+        type: adminModule === 'projects' ? 'project' : 'snippet',
         status: 'publish',
         image_url: '',
         meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
