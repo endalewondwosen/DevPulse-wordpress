@@ -61,6 +61,7 @@ import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ProjectDeepDive } from './components/ProjectDeepDive';
+import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/ProjectSkeleton';
 
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
@@ -1532,13 +1533,22 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-              {projects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onClick={() => handlePostClick(project.id)}
-                />
-              ))}
+              {loading ? (
+                <>
+                  <ProjectSkeleton />
+                  <ProjectSkeleton />
+                  <ProjectSkeleton />
+                  <ProjectSkeleton />
+                </>
+              ) : (
+                projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onClick={() => handlePostClick(project.id)}
+                  />
+                ))
+              )}
             </motion.div>
           )}
 
@@ -1550,13 +1560,21 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-4"
             >
-              {snippets.map((snippet) => (
-                <SnippetItem
-                  key={snippet.id}
-                  snippet={snippet}
-                  onClick={() => handlePostClick(snippet.id)}
-                />
-              ))}
+              {loading ? (
+                <>
+                  <SnippetSkeleton />
+                  <SnippetSkeleton />
+                  <SnippetSkeleton />
+                </>
+              ) : (
+                snippets.map((snippet) => (
+                  <SnippetItem
+                    key={snippet.id}
+                    snippet={snippet}
+                    onClick={() => handlePostClick(snippet.id)}
+                  />
+                ))
+              )}
             </motion.div>
           )}
 
