@@ -1,7 +1,4 @@
 import express, { Request, Response, NextFunction } from "express";
-import dotenv from "dotenv";
-dotenv.config();
-
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -10,13 +7,12 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
-import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = "devpulse-secret-key-123";
-//
+
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
 let pgPool: pg.Pool | null = null;
@@ -104,12 +100,34 @@ async function initDb() {
     // Column likely already exists
   }
 
-  // Migration for messages.status
+  // Migration for sort_order in experience
   try {
     if (isPostgres) {
-      await exec(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'unread'`);
+      await exec(`ALTER TABLE experience ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
     } else {
-      await exec(`ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'unread'`);
+      await exec(`ALTER TABLE experience ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
+  // Migration for sort_order in skills
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE skills ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
+    } else {
+      await exec(`ALTER TABLE skills ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
+  // Migration for sort_order in certifications
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE certifications ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
+    } else {
+      await exec(`ALTER TABLE certifications ADD COLUMN sort_order INTEGER DEFAULT 0`);
     }
   } catch (e) {
     // Column likely already exists
@@ -179,6 +197,8 @@ async function initDb() {
 
   if (count === 0) {
     console.log("Seeding initial data...");
+    
+    // Seed Projects
     const projects = [
       {
         title: "E-service portal",
@@ -219,11 +239,8 @@ async function initDb() {
         }
       }
     }
-  }
 
-  // Seed Experience if empty
-  const expCountRes = await queryOne("SELECT COUNT(*) as count FROM experience");
-  if (parseInt(expCountRes.count) === 0) {
+    // Seed Experience
     await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [
       "Adnan Business Group Technology Company", 
       "Full stack Developer", 
@@ -231,81 +248,82 @@ async function initDb() {
       "Developing web applications for Adama, Shagger, and Dire Dawa city e-services, traffic management systems, and project management tools.", 
       1
     ]);
-  }
 
-  // Seed Skills if empty
-  const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
-  const skillCount = parseInt(skillCountRes.count);
-  if (skillCount === 0) {
-    const skills = [
-      { cat: "frontend", name: "React JS / Next JS", order: 1 },
-      { cat: "frontend", name: "TypeScript", order: 2 },
-      { cat: "frontend", name: "Tailwind CSS", order: 3 },
-      { cat: "frontend", name: "Redux / Zustand", order: 4 },
-      { cat: "backend", name: "Node.js / Express", order: 1 },
-      { cat: "backend", name: "Nest JS", order: 2 },
-      { cat: "backend", name: "Laravel / PHP", order: 3 },
-      { cat: "backend", name: "Prisma ORM", order: 4 },
-      { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
-      { cat: "devops", name: "MongoDB", order: 2 },
-      { cat: "devops", name: "Docker / Git", order: 3 },
-      { cat: "additional", name: "AI Prompt Engineering", order: 1 },
-      { cat: "additional", name: "System Design", order: 2 },
-      { cat: "additional", name: "Microservices", order: 3 }
+    // Seed Skills if empty
+    const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
+    const skillCount = parseInt(skillCountRes.count);
+
+    if (skillCount === 0) {
+      const skills = [
+        { cat: "frontend", name: "React JS / Next JS", order: 1 },
+        { cat: "frontend", name: "TypeScript", order: 2 },
+        { cat: "frontend", name: "Tailwind CSS", order: 3 },
+        { cat: "frontend", name: "Redux / Zustand", order: 4 },
+        { cat: "backend", name: "Node.js / Express", order: 1 },
+        { cat: "backend", name: "Nest JS", order: 2 },
+        { cat: "backend", name: "Laravel / PHP", order: 3 },
+        { cat: "backend", name: "Prisma ORM", order: 4 },
+        { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
+        { cat: "devops", name: "MongoDB", order: 2 },
+        { cat: "devops", name: "Docker / Git", order: 3 },
+        { cat: "additional", name: "AI Prompt Engineering", order: 1 },
+        { cat: "additional", name: "System Design", order: 2 },
+        { cat: "additional", name: "Microservices", order: 3 }
+      ];
+
+      for (const s of skills) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+      }
+    }
+
+    // Ensure specific requested skills exist
+    const requestedSkills = [
+      { cat: "frontend", name: "Redux" },
+      { cat: "frontend", name: "Zustand" },
+      { cat: "backend", name: "Prisma" },
+      { cat: "devops", name: "PostgreSQL" },
+      { cat: "devops", name: "MySQL" },
+      { cat: "devops", name: "MongoDB" },
+      { cat: "devops", name: "Docker" },
+      { cat: "devops", name: "Git" },
+      { cat: "additional", name: "AI Prompt Engineering" }
     ];
 
-    for (const s of skills) {
-      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+    for (const s of requestedSkills) {
+      const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
+      if (!exists) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+      }
     }
-  }
 
-  // Ensure specific requested skills exist
-  const requestedSkills = [
-    { cat: "frontend", name: "Redux" },
-    { cat: "frontend", name: "Zustand" },
-    { cat: "backend", name: "Prisma" },
-    { cat: "devops", name: "PostgreSQL" },
-    { cat: "devops", name: "MySQL" },
-    { cat: "devops", name: "MongoDB" },
-    { cat: "devops", name: "Docker" },
-    { cat: "devops", name: "Git" },
-    { cat: "additional", name: "AI Prompt Engineering" }
-  ];
-
-  for (const s of requestedSkills) {
-    const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
-    if (!exists) {
-      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+    // Seed Certifications if empty
+    const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
+    const certCount = parseInt(certCountRes.count);
+    if (certCount === 0) {
+      const certs = [
+        { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
+        { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
+        { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
+      ];
+      for (const c of certs) {
+        await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
+      }
     }
-  }
 
-  // Seed Certifications if empty
-  const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
-  const certCount = parseInt(certCountRes.count);
-  if (certCount === 0) {
-    const certs = [
-      { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
-      { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
-      { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
-    ];
-    for (const c of certs) {
-      await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
-    }
-  }
-
-  // Seed Settings if empty
-  const settingsCountRes = await queryOne("SELECT COUNT(*) as count FROM settings");
-  const settingsCount = parseInt(settingsCountRes.count);
-  if (settingsCount === 0) {
-    const defaultSettings = [
-      { key: 'profile_image', value: '/profile.png' },
-      { key: 'resume_url', value: '/resume.pdf' },
-      { key: 'site_title', value: 'DevPulse Portfolio' },
-      { key: 'hero_title', value: 'Architecting Digital Excellence' },
-      { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' }
-    ];
-    for (const s of defaultSettings) {
-      await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);
+    // Seed Settings if empty
+    const settingsCountRes = await queryOne("SELECT COUNT(*) as count FROM settings");
+    const settingsCount = parseInt(settingsCountRes.count);
+    if (settingsCount === 0) {
+      const defaultSettings = [
+        { key: 'profile_image', value: '/profile.jpg' },
+        { key: 'resume_url', value: '/resume.pdf' },
+        { key: 'site_title', value: 'DevPulse Portfolio' },
+        { key: 'hero_title', value: 'Architecting Digital Excellence' },
+        { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' }
+      ];
+      for (const s of defaultSettings) {
+        await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);
+      }
     }
   }
 }
@@ -313,39 +331,9 @@ async function initDb() {
 async function startServer() {
   await initDb();
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
-  const PUBLIC_SITE_URL =
-    process.env.PUBLIC_SITE_URL || "https://wondwosenportifolio.vercel.app";
-
-  app.use(cors({
-    origin: (origin, callback) => {
-      // Allow non-browser tools (no Origin header)
-      if (!origin) return callback(null, true);
-
-      const allowList = new Set([
-        "https://devpulse-wordpress.onrender.com",
-        "https://wondwosenportifolio.vercel.app", // legacy typo domain (kept for compatibility)
-        "https://wondwosenportfolio.vercel.app",
-      ]);
-
-      if (allowList.has(origin)) return callback(null, true);
-
-      // Allow Vercel previews like https://<branch>-<project>.vercel.app
-      if (origin.endsWith(".vercel.app")) return callback(null, true);
-
-      return callback(new Error("CORS: origin not allowed"), false);
-    },
-    credentials: true,
-  }));
+  const PORT = 3000;
 
   app.use(express.json());
-
-  // If this service is used as an API backend (e.g. Render),
-  // redirect the public root/non-API pages to the main Vercel site.
-  if (process.env.NODE_ENV === "production") {
-    app.get("/", (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
-    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
-  }
 
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, "public", "uploads");
@@ -472,14 +460,18 @@ async function startServer() {
   app.post("/api/settings", authenticateToken, async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+    
     const settings = req.body;
     try {
       for (const [key, value] of Object.entries(settings)) {
-        if (isPostgres) {
-          await query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
-        } else {
-          // SQLite version
+        await query("INSERT INTO settings (key, value) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
+      }
+      res.json({ message: "Settings updated" });
+    } catch (error) {
+      // Handle SQLite vs Postgres conflict syntax if needed, but ON CONFLICT works in both modern versions
+      try {
+        // Fallback for older SQLite if needed
+        for (const [key, value] of Object.entries(settings)) {
           const exists = await queryOne("SELECT id FROM settings WHERE key = $1", [key]);
           if (exists) {
             await query("UPDATE settings SET value = $1 WHERE key = $2", [value, key]);
@@ -487,11 +479,10 @@ async function startServer() {
             await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [key, value]);
           }
         }
+        res.json({ message: "Settings updated" });
+      } catch (innerError) {
+        res.status(500).json({ error: "Failed to update settings" });
       }
-      res.json({ message: "Settings updated" });
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      res.status(500).json({ error: "Failed to update settings" });
     }
   });
 
@@ -856,16 +847,31 @@ async function startServer() {
   });
 
   // Resume Download Route
-  app.get("/api/resume/download", (req, res) => {
-    const resumePath = path.join(__dirname, "public", "resume.pdf");
-    
-    // Check if file exists
-    if (fs.existsSync(resumePath)) {
-      res.setHeader('Content-Disposition', 'attachment; filename=Wondwosen_Endale_Resume.pdf');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.sendFile(resumePath);
-    } else {
-      res.status(404).json({ error: "Resume file not found" });
+  app.get("/api/resume/download", async (req, res) => {
+    try {
+      const setting = await queryOne("SELECT value FROM settings WHERE key = 'resume_url'");
+      const resumeUrl = setting ? setting.value : '/resume.pdf';
+      
+      if (resumeUrl.startsWith('/uploads/')) {
+        const filePath = path.join(__dirname, resumeUrl);
+        if (fs.existsSync(filePath)) {
+          res.setHeader('Content-Disposition', 'attachment; filename=Resume.pdf');
+          res.setHeader('Content-Type', 'application/pdf');
+          return res.sendFile(filePath);
+        }
+      }
+      
+      // Fallback to public folder if it's a simple path or file not found in uploads
+      const publicPath = path.join(__dirname, "public", resumeUrl.replace(/^\//, ''));
+      if (fs.existsSync(publicPath)) {
+        res.setHeader('Content-Disposition', 'attachment; filename=Resume.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+        return res.sendFile(publicPath);
+      }
+
+      res.status(404).send("Resume file not found. Please upload it in the admin panel.");
+    } catch (error) {
+      res.status(500).send("Error retrieving resume.");
     }
   });
 
