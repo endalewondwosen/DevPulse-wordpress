@@ -843,6 +843,7 @@ export default function App() {
       type: post.type,
       status: post.status,
       image_url: post.image_url || '',
+      sort_order: post.sort_order || 0,
       meta: {
         github_url: post.meta.github_url || '',
         project_url: post.meta.project_url || '',
