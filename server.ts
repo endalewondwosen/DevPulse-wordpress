@@ -104,6 +104,17 @@ async function initDb() {
     // Column likely already exists
   }
 
+  // Migration for sort_order in experience
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE experience ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
+    } else {
+      await exec(`ALTER TABLE experience ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
   // Migration for messages.status
   try {
     if (isPostgres) {

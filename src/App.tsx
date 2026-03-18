@@ -428,7 +428,7 @@ export default function App() {
     
     setProjects(updatedPosts);
     
-    // Update each item in the database
+    // Update each item in database
     try {
       for (const post of updatedPosts) {
         await apiFetch(`/api/posts/${post.id}`, {
@@ -456,7 +456,56 @@ export default function App() {
     }
   };
 
-  // Experience Handlers
+  const handleMoveExperience = async (id: number, direction: 'up' | 'down') => {
+    if (!token) return;
+    
+    const currentExperience = [...experience];
+    const index = currentExperience.findIndex(e => e.id === id);
+    
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (newIndex < 0 || newIndex >= currentExperience.length) return;
+    
+    // Swap items in array
+    const [movedItem] = currentExperience.splice(index, 1);
+    currentExperience.splice(newIndex, 0, movedItem);
+    
+    // Update sort_order values
+    const updatedExperience = currentExperience.map((exp, idx) => ({
+      ...exp,
+      sort_order: idx
+    }));
+    
+    setExperience(updatedExperience);
+    
+    // Update each item in database
+    try {
+      for (const exp of updatedExperience) {
+        await apiFetch(`/api/experience/${exp.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            company: exp.company,
+            role: exp.role,
+            period: exp.period,
+            description: exp.description,
+            sort_order: exp.sort_order
+          })
+        });
+      }
+      setNotification({ message: "Experience order updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Reorder error:", error);
+      setNotification({ message: error.message || "Failed to update order", type: 'error' });
+      fetchData(); // Refresh to restore original order
+    }
+  };
+
   const handleCreateExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -2089,6 +2138,22 @@ export default function App() {
                                       <p className="text-[10px] text-zinc-500">{exp.period}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button 
+                                        onClick={() => handleMoveExperience(exp.id, 'up')} 
+                                        disabled={exp.sort_order === 0}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move up"
+                                      >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button 
+                                        onClick={() => handleMoveExperience(exp.id, 'down')} 
+                                        disabled={exp.sort_order === experience.length - 1}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move down"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                      </button>
                                       <button onClick={() => { setEditingExpId(exp.id); setNewExperience(exp); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
                                       <button onClick={() => handleDeleteExperience(exp.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                                     </div>
