@@ -93,6 +93,9 @@ export default function App() {
     contact_email: 'endalewondwosen@gmail.com'
   });
   const [loading, setLoading] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Connecting to database...');
+  const [showSlowConnectionWarning, setShowSlowConnectionWarning] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [token, setToken] = useState<string | null>(localStorage.getItem('devpulse_token'));
@@ -213,12 +216,25 @@ export default function App() {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
     });
-
     return () => observer.disconnect();
   }, [activeTab]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (retryCount = 0) => {
+    if (retryCount === 0) {
+      setLoading(true);
+      setLoadingMessage('Connecting to database...');
+      setShowSlowConnectionWarning(false);
+    }
+    
+    // Set up timeout for slow connections
+    const timeoutId = setTimeout(() => {
+      if (retryCount === 0) {
+        setIsWakingUp(true);
+        setLoadingMessage('Database is waking up (Neon free tier)...');
+        setShowSlowConnectionWarning(true);
+      }
+    }, 3000); // Show warning after 3 seconds
+
     try {
       const headers: any = {};
       if (token) {
@@ -227,6 +243,8 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
+      setLoadingMessage('Fetching portfolio data...');
+      
       const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
         apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
@@ -238,6 +256,8 @@ export default function App() {
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
 
+      setLoadingMessage('Processing data...');
+      
       const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
@@ -257,14 +277,29 @@ export default function App() {
       setStats(statData);
       setSettings(settingsData);
       setMessages(msgData);
+      
+      clearTimeout(timeoutId);
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("Error fetching data:", error);
+      
+      // Retry logic for network errors (common with cold starts)
+      if (retryCount < 2 && (error.message.includes('fetch') || error.message.includes('network'))) {
+        setLoadingMessage(`Connection failed, retrying... (${retryCount + 1}/2)`);
+        setTimeout(() => fetchData(retryCount + 1), 2000);
+        return;
+      }
+      
       // Only show notification if it's not a background refresh
       if (activeTab !== 'admin') {
         setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
       }
     } finally {
-      setLoading(false);
+      if (retryCount === 0 || retryCount >= 2) {
+        setLoading(false);
+        setIsWakingUp(false);
+        setShowSlowConnectionWarning(false);
+      }
     }
   };
 
@@ -1000,7 +1035,7 @@ export default function App() {
                 <Mail className="w-4 h-4" />
               </a>
             </div>
-
+{/* //commit */}
             {token ? (
               <button
                 onClick={handleLogout}
@@ -1547,12 +1582,60 @@ export default function App() {
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               {loading ? (
-                <>
-                  <ProjectSkeleton />
-                  <ProjectSkeleton />
-                  <ProjectSkeleton />
-                  <ProjectSkeleton />
-                </>
+                <div className="col-span-full space-y-6">
+                  {/* Enhanced Loading Indicator */}
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
+                      <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
+                    </div>
+                    
+                    <h3 className="text-xl font-semibold text-zinc-100 mb-2">
+                      {isWakingUp ? 'Waking Up Database' : 'Loading Portfolio'}
+                    </h3>
+                    
+                    <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                      {loadingMessage}
+                    </p>
+
+                    {/* Slow Connection Warning */}
+                    {showSlowConnectionWarning && (
+                      <div className="max-w-md mx-auto p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <div className="flex items-center gap-3 text-amber-400">
+                          <Activity className="w-5 h-5 animate-pulse" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
+                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress Dots */}
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-emerald-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skeleton Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ProjectSkeleton />
+                    <ProjectSkeleton />
+                  </div>
+                </div>
               ) : (
                 projects.map((project) => (
                   <ProjectCard
@@ -1574,11 +1657,58 @@ export default function App() {
               className="space-y-4"
             >
               {loading ? (
-                <>
+                <div className="space-y-6">
+                  {/* Enhanced Loading Indicator for Snippets */}
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
+                      <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
+                    </div>
+                    
+                    <h3 className="text-xl font-semibold text-zinc-100 mb-2">
+                      {isWakingUp ? 'Waking Up Database' : 'Loading Code Snippets'}
+                    </h3>
+                    
+                    <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                      {loadingMessage}
+                    </p>
+
+                    {/* Slow Connection Warning */}
+                    {showSlowConnectionWarning && (
+                      <div className="max-w-md mx-auto p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <div className="flex items-center gap-3 text-amber-400">
+                          <Activity className="w-5 h-5 animate-pulse" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
+                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress Dots */}
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-emerald-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skeleton Items */}
                   <SnippetSkeleton />
                   <SnippetSkeleton />
-                  <SnippetSkeleton />
-                </>
+                </div>
               ) : (
                 snippets.map((snippet) => (
                   <SnippetItem
