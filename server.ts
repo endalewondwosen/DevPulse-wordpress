@@ -232,8 +232,10 @@ async function initDb() {
     }
   }
 
-  // Seed Snippets
-  const snippets = [
+  // Seed Snippets if empty
+  const snippetCountRes = await queryOne("SELECT COUNT(*) as count FROM posts WHERE type = 'snippet'");
+  if (parseInt(snippetCountRes.count) === 0) {
+    const snippets = [
     {
       title: "React Database Retry Hook",
       content: "A robust custom hook for handling database connections with automatic retries and 'waking up' state management. Perfect for serverless databases with cold starts.",
@@ -327,6 +329,7 @@ async function initDb() {
         await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [postId, key, value]);
       }
     }
+  }
   }
 
   // Seed Experience if empty

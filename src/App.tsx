@@ -61,6 +61,7 @@ import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ProjectDeepDive } from './components/ProjectDeepDive';
+import { SnippetDeepDive } from './components/SnippetDeepDive';
 import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/ProjectSkeleton';
 
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
@@ -166,6 +167,7 @@ export default function App() {
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Post | null>(null);
+  const [selectedSnippet, setSelectedSnippet] = useState<Post | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -346,6 +348,11 @@ export default function App() {
     const project = projects.find(p => p.id === id);
     if (project) {
       setSelectedProject(project);
+    }
+    // Find the snippet by ID
+    const snippet = snippets.find(s => s.id === id);
+    if (snippet) {
+      setSelectedSnippet(snippet);
     }
     // Trigger the logging middleware on the server
     await apiFetch(`/api/posts/${id}`);
@@ -2642,6 +2649,12 @@ export default function App() {
         project={selectedProject}
         isOpen={!!selectedProject}
         onClose={() => setSelectedProject(null)}
+      />
+      {/* Snippet Deep Dive Modal */}
+      <SnippetDeepDive
+        snippet={selectedSnippet}
+        isOpen={!!selectedSnippet}
+        onClose={() => setSelectedSnippet(null)}
       />
     </div>
   );
