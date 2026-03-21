@@ -2370,7 +2370,7 @@ export default function App() {
                 <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href={`mailto:${settings.contact_email || 'hello@example.com'}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>
