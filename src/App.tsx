@@ -989,6 +989,18 @@ export default function App() {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
+            <div className="flex items-center gap-2">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="GitHub">
+                <Github className="w-4 h-4" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="LinkedIn">
+                <Linkedin className="w-4 h-4" />
+              </a>
+              <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="Email">
+                <Mail className="w-4 h-4" />
+              </a>
+            </div>
+
             {token ? (
               <button
                 onClick={handleLogout}
