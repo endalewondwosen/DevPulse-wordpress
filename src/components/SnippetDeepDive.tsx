@@ -50,7 +50,7 @@ export const SnippetDeepDive: React.FC<SnippetDeepDiveProps> = ({ snippet, isOpe
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">{snippet.title}</h2>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-bold">{snippet.meta.language || 'text'}</span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-bold">{snippet.meta.language || 'text'}</span>
                 </div>
               </div>
               
@@ -66,8 +66,8 @@ export const SnippetDeepDive: React.FC<SnippetDeepDiveProps> = ({ snippet, isOpe
             <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
               {/* Description */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Description</h3>
-                <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Description</h3>
+                <p className="text-zinc-800 dark:text-zinc-300 leading-relaxed">
                   {snippet.content}
                 </p>
               </div>
@@ -76,10 +76,10 @@ export const SnippetDeepDive: React.FC<SnippetDeepDiveProps> = ({ snippet, isOpe
               {/* Code Block */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Implementation</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Implementation</h3>
                   <button 
                     onClick={handleCopy}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all text-xs font-bold text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-emerald-500 hover:text-black dark:hover:bg-emerald-500 dark:hover:text-black rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all text-xs font-bold text-zinc-700 dark:text-zinc-300"
                   >
                     {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                     {copied ? 'Copied!' : 'Copy Code'}
@@ -104,7 +104,7 @@ export const SnippetDeepDive: React.FC<SnippetDeepDiveProps> = ({ snippet, isOpe
               </div>
               <button 
                 onClick={onClose}
-                className="px-8 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all border border-zinc-200 dark:border-zinc-700"
+                className="px-8 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-emerald-500 hover:text-black dark:hover:bg-emerald-500 dark:hover:text-black text-zinc-900 dark:text-white font-bold rounded-2xl transition-all border border-zinc-200 dark:border-zinc-700"
               >
                 Close Snippet
               </button>
