@@ -1038,9 +1038,9 @@ export default function App() {
               <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="LinkedIn">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="Email">
+              {/* <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="Email">
                 <Mail className="w-4 h-4" />
-              </a>
+              </a> */}
             </div>
 {/* //commit */}
             {token ? (
