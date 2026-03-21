@@ -1390,7 +1390,7 @@ export default function App() {
                         <div className="flex -space-x-2">
                           <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900">TS</div>
                           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-black">R</div>
-                          <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-white">N</div>
+                          <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-black dark:text-white">N</div>
                         </div>
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stack</span>
                       </div>
