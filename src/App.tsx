@@ -85,7 +85,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({
-    profile_image: '/profile.jpg',
+    profile_image: '/profile.png',
     resume_url: '/resume.pdf',
     site_title: 'Wondwosen Endale Portifolio',
     hero_title: 'Architecting Digital Excellence',
@@ -1344,15 +1344,37 @@ export default function App() {
 
                       {/* Main Image Container */}
                       <div className="w-full h-full rounded-[3rem] overflow-hidden border-2 border-zinc-800 bg-zinc-900 relative group">
-                        <img
-                          src={settings.profile_image || "/profile.jpg"}
-                          alt={settings.site_title || "Wondwosen Endale"}
-                          className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800&h=800";
-                          }}
-                        />
+                        {loading ? (
+                          // Skeleton loader for profile image
+                          <div className="w-full h-full bg-zinc-800 animate-pulse flex items-center justify-center">
+                            <div className="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
+                              <User className="w-8 h-8 text-zinc-600" />
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={settings.profile_image || "/profile.png"}
+                            alt={settings.site_title || "Wondwosen Endale"}
+                            className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              // Show a generic silhouette instead of a random person
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = (e.target as HTMLImageElement).parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                    <div class="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
+                                      <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
 
