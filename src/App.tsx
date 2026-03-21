@@ -856,7 +856,7 @@ export default function App() {
             text: `As a portfolio analytics assistant, analyze the following data and provide a concise, professional summary report for the developer. 
             Data:
             - Projects: ${projects.length}
-            - Snippets: ${snippets.length}
+            - Code Lab: ${snippets.length}
             - Total Messages: ${messages.length} (${messages.filter(m => m.status === 'unread').length} unread)
             - Top Skills: ${skills.map(s => s.name).join(', ')}
             - API Activity: ${JSON.stringify(stats)}
@@ -998,7 +998,7 @@ export default function App() {
               className={`text-sm font-medium transition-colors ${activeTab === 'snippets' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
                 }`}
             >
-              Snippets
+              Code Lab
             </button>
           </div>
 
@@ -1090,7 +1090,7 @@ export default function App() {
                   }}
                   className="text-left text-lg font-medium text-zinc-400 hover:text-emerald-500 transition-colors"
                 >
-                  Snippets
+                  Code Lab
                 </button>
                 <div className="h-px bg-zinc-800 my-2" />
                 {token ? (
@@ -1680,14 +1680,14 @@ export default function App() {
             >
               {loading ? (
                 <div className="space-y-6">
-                  {/* Enhanced Loading Indicator for Snippets */}
+                  {/* Enhanced Loading Indicator for Code Lab */}
                   <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
                       <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
                     </div>
                     
                     <h3 className="text-xl font-semibold text-zinc-100 mb-2">
-                      {isWakingUp ? 'Waking Up Database' : 'Loading Code Snippets'}
+                      {isWakingUp ? 'Waking Up Database' : 'Loading Code Code Lab'}
                     </h3>
                     
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
@@ -1775,7 +1775,7 @@ export default function App() {
                     {[
                       { id: 'overview', name: 'Overview', icon: BarChart3 },
                       { id: 'projects', name: 'Projects', icon: Box },
-                      { id: 'snippets', name: 'Snippets', icon: Terminal },
+                      { id: 'snippets', name: 'Code Lab', icon: Terminal },
                       { id: 'experience', name: 'Experience', icon: Briefcase },
                       { id: 'skills', name: 'Skills', icon: Wrench },
                       { id: 'certifications', name: 'Certifications', icon: Award },
@@ -1910,7 +1910,7 @@ export default function App() {
                                   <Pie
                                     data={[
                                       { name: 'Projects', value: projects.length },
-                                      { name: 'Snippets', value: snippets.length },
+                                      { name: 'Code Lab', value: snippets.length },
                                       { name: 'Experience', value: experience.length },
                                     ]}
                                     cx="50%"
@@ -1939,7 +1939,7 @@ export default function App() {
                                   <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Snippets
+                                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Code Lab
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
                                   <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
@@ -2130,7 +2130,7 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* Projects & Snippets Module */}
+                      {/* Projects & Code Lab Module */}
                       {(adminModule === 'projects' || adminModule === 'snippets') && (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                           <div className="space-y-6">

@@ -59,6 +59,7 @@
 // import { SnippetItem } from './components/SnippetItem';
 // import { AIChatAssistant } from './components/AIChatAssistant';
 // import { ProjectDeepDive } from './components/ProjectDeepDive';
+// import { SnippetDeepDive } from './components/SnippetDeepDive';
 // import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/SkeletonLoader';
 // import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
@@ -105,7 +106,8 @@
 //       challenge: '',
 //       solution: '',
 //       impact: '',
-//       architecture: ''
+//       architecture: '',
+//       code: ''
 //     }
 //   });
 //   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -149,6 +151,7 @@
 //   const [geminiReport, setGeminiReport] = useState<string>('');
 //   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 //   const [selectedProject, setSelectedProject] = useState<Post | null>(null);
+//   const [selectedSnippet, setSelectedSnippet] = useState<Post | null>(null);
 
 //   useEffect(() => {
 //     if (notification) {
@@ -311,6 +314,8 @@
     
 //     if (post.type === 'project') {
 //       setSelectedProject(post);
+//     } else if (post.type === 'snippet') {
+//       setSelectedSnippet(post);
 //     }
 //   };
 
@@ -370,7 +375,7 @@
 //         status: 'publish',
 //         image_url: '',
 //         sort_order: 0,
-//         meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
+//         meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '', code: '' }
 //       });
 //       setEditingId(null);
 //       fetchData();
@@ -775,7 +780,8 @@
 //         challenge: post.meta.challenge || '',
 //         solution: post.meta.solution || '',
 //         impact: post.meta.impact || '',
-//         architecture: post.meta.architecture || ''
+//         architecture: post.meta.architecture || '',
+//         code: post.meta.code || ''
 //       }
 //     });
 //     // Scroll to form
@@ -791,7 +797,7 @@
 //       status: 'publish',
 //       image_url: '',
 //       sort_order: 0,
-//       meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
+//       meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '', code: '' }
 //     });
 //   };
 
@@ -884,7 +890,7 @@
 //                 activeTab === 'snippets' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
 //               }`}
 //             >
-//               Snippets
+//               Code Lab
 //             </button>
 //           </div>
 
@@ -965,7 +971,7 @@
 //                   }}
 //                   className="text-left text-lg font-medium text-zinc-400 hover:text-emerald-500 transition-colors"
 //                 >
-//                   Snippets
+//                   Code Lab
 //                 </button>
 //                 <div className="h-px bg-zinc-800 my-2" />
 //                 {token ? (
@@ -1536,7 +1542,7 @@
 //                     {[
 //                       { id: 'overview', name: 'Overview', icon: BarChart3 },
 //                       { id: 'projects', name: 'Projects', icon: Box },
-//                       { id: 'snippets', name: 'Snippets', icon: Terminal },
+//                       { id: 'snippets', name: 'Code Lab', icon: Terminal },
 //                       { id: 'experience', name: 'Experience', icon: Briefcase },
 //                       { id: 'skills', name: 'Skills', icon: Wrench },
 //                       { id: 'certifications', name: 'Certifications', icon: Award },
@@ -1597,7 +1603,7 @@
 //                               setEditingSkillId(null);
 //                               setEditingCertId(null);
 //                               // Reset forms
-//                               setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', sort_order: 0, meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
+//                               setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', sort_order: 0, meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '', code: '' } });
 //                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
 //                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
 //                               setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
@@ -1671,7 +1677,7 @@
 //                                 <Pie
 //                                   data={[
 //                                     { name: 'Projects', value: projects.length },
-//                                     { name: 'Snippets', value: snippets.length },
+//                                     { name: 'Code Lab', value: snippets.length },
 //                                     { name: 'Experience', value: experience.length },
 //                                   ]}
 //                                   cx="50%"
@@ -1700,7 +1706,7 @@
 //                                 <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
 //                               </div>
 //                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-//                                 <div className="w-2 h-2 rounded-full bg-blue-500" /> Snippets
+//                                 <div className="w-2 h-2 rounded-full bg-blue-500" /> Code Lab
 //                               </div>
 //                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
 //                                 <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
@@ -1790,7 +1796,7 @@
 //                       </div>
 //                     )}
 
-//                     {/* Projects & Snippets Module */}
+//                     {/* Projects & Code Lab Module */}
 //                     {(adminModule === 'projects' || adminModule === 'snippets') && (
 //                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 //                         <div className="space-y-6">
@@ -1900,6 +1906,26 @@
 //                                   onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, architecture: e.target.value}})}
 //                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
 //                                   placeholder="Architecture (Tech stack details, patterns used)"
+//                                 />
+//                               </div>
+//                             )}
+
+//                             {adminModule === 'snippets' && (
+//                               <div className="space-y-4 pt-2 border-t border-zinc-800">
+//                                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Code Lab Details</h4>
+//                                 <input 
+//                                   type="text"
+//                                   value={newPost.meta.language}
+//                                   onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, language: e.target.value}})}
+//                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+//                                   placeholder="Language (e.g. typescript, javascript, css)"
+//                                 />
+//                                 <textarea 
+//                                   rows={8}
+//                                   value={newPost.meta.code}
+//                                   onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, code: e.target.value}})}
+//                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm font-mono outline-none"
+//                                   placeholder="Code Snippet"
 //                                 />
 //                               </div>
 //                             )}
@@ -2372,6 +2398,12 @@
 //         project={selectedProject}
 //         isOpen={!!selectedProject}
 //         onClose={() => setSelectedProject(null)}
+//       />
+
+//       <SnippetDeepDive 
+//         snippet={selectedSnippet}
+//         isOpen={!!selectedSnippet}
+//         onClose={() => setSelectedSnippet(null)}
 //       />
 
 //       <AnimatePresence>

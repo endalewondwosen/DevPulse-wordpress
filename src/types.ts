@@ -15,6 +15,7 @@ export interface Post {
     solution?: string;
     impact?: string;
     architecture?: string;
+    code?: string;
   };
   created_at: string;
 }

@@ -232,18 +232,105 @@ async function initDb() {
     }
   }
 
-  // Seed Experience if empty
-  const expCountRes = await queryOne("SELECT COUNT(*) as count FROM experience");
-  if (parseInt(expCountRes.count) === 0) {
-    await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [
-      "Adnan Business Group Technology Company", 
-      "Full stack Developer", 
-      "May 2024 - Present", 
-      "Developing web applications for Adama, Shagger, and Dire Dawa city e-services, traffic management systems, and project management tools.", 
-      1
-    ]);
+  // Seed Snippets
+  const snippets = [
+    {
+      title: "React Database Retry Hook",
+      content: "A robust custom hook for handling database connections with automatic retries and 'waking up' state management. Perfect for serverless databases with cold starts.",
+      type: "snippet",
+      meta: { 
+        language: "typescript", 
+        code: `const useDatabaseRetry = (fetchFn, maxRetries = 3) => {
+  const [loading, setLoading] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+
+  const execute = async (retryCount = 0) => {
+    try {
+      await fetchFn();
+      setLoading(false);
+      setIsWakingUp(false);
+    } catch (err) {
+      if (retryCount < maxRetries) {
+        setIsWakingUp(true);
+        setTimeout(() => execute(retryCount + 1), 3000);
+      } else {
+        setLoading(false);
+        setIsWakingUp(false);
+      }
+    }
+  };
+
+  return { loading, isWakingUp, execute };
+};`
+      }
+    },
+    {
+      title: "Express Unified Query Helper",
+      content: "A clean utility function that abstracts database interactions, supporting both SQLite for local development and PostgreSQL for production environments.",
+      type: "snippet",
+      meta: { 
+        language: "javascript", 
+        code: `async function query(text, params = []) {
+  if (isPostgres) {
+    const res = await pgPool.query(text, params);
+    return res.rows;
+  } else {
+    const sqliteText = text.replace(/\\$(\\d+)/g, '?');
+    const stmt = sqliteDb.prepare(sqliteText);
+    if (text.trim().toUpperCase().startsWith("SELECT")) {
+      return stmt.all(...params);
+    } else {
+      const result = stmt.run(...params);
+      return { lastInsertRowid: result.lastInsertRowid, changes: result.changes };
+    }
+  }
+};`
+      }
+    },
+    {
+      title: "Tailwind Shimmer Animation",
+      content: "Custom Tailwind CSS configuration and utility classes for creating smooth, high-performance skeleton loader shimmer effects.",
+      type: "snippet",
+      meta: { 
+        language: "css", 
+        code: `@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}`
+      }
+    }
+  ];
+
+  for (const s of snippets) {
+    let postId;
+    if (isPostgres) {
+      const res = await query("INSERT INTO posts (title, content, type) VALUES ($1, $2, $3) RETURNING id", [s.title, s.content, s.type]);
+      postId = res[0].id;
+    } else {
+      const res = await query("INSERT INTO posts (title, content, type) VALUES ($1, $2, $3)", [s.title, s.content, s.type]);
+      postId = res.lastInsertRowid;
+    }
+    
+    if (s.meta) {
+      for (const [key, value] of Object.entries(s.meta)) {
+        await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [postId, key, value]);
+      }
+    }
   }
 
+  // Seed Experience if empty
+  const expCountRes = await queryOne("SELECT COUNT(*) as count FROM experience");
   // Seed Skills if empty
   const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
   const skillCount = parseInt(skillCountRes.count);
