@@ -313,7 +313,8 @@ async function initDb() {
       { key: 'resume_url', value: '/resume.pdf' },
       { key: 'site_title', value: 'DevPulse Portfolio' },
       { key: 'hero_title', value: 'Architecting Digital Excellence' },
-      { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' }
+      { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' },
+      { key: 'contact_email', value: 'endalewondwosen@gmail.com' }
     ];
     for (const s of defaultSettings) {
       await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);

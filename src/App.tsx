@@ -89,7 +89,8 @@ export default function App() {
     resume_url: '/resume.pdf',
     site_title: 'Wondwosen Endale Portifolio',
     hero_title: 'Architecting Digital Excellence',
-    hero_subtitle: 'Full Stack Engineer & System Architect'
+    hero_subtitle: 'Full Stack Engineer & System Architect',
+    contact_email: 'endalewondwosen@gmail.com'
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
@@ -1917,6 +1918,17 @@ export default function App() {
                                 value={settings.hero_subtitle}
                                 onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })}
                                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Contact Email</label>
+                              <input
+                                type="email"
+                                value={settings.contact_email || ''}
+                                onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="your.email@example.com"
                               />
                             </div>
 
