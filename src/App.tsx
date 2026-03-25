@@ -227,7 +227,7 @@ export default function App() {
       setLoadingMessage('Connecting to database...');
       setShowSlowConnectionWarning(false);
     }
-    
+
     // Set up timeout for slow connections
     const timeoutId = setTimeout(() => {
       if (retryCount === 0) {
@@ -246,7 +246,7 @@ export default function App() {
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
       setLoadingMessage('Fetching portfolio data...');
-      
+
       const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
         apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
@@ -259,7 +259,7 @@ export default function App() {
       ]);
 
       setLoadingMessage('Processing data...');
-      
+
       const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
@@ -279,19 +279,19 @@ export default function App() {
       setStats(statData);
       setSettings(settingsData);
       setMessages(msgData);
-      
+
       clearTimeout(timeoutId);
     } catch (error: any) {
       clearTimeout(timeoutId);
       console.error("Error fetching data:", error);
-      
+
       // Retry logic for network errors (common with cold starts)
       if (retryCount < 2 && (error.message.includes('fetch') || error.message.includes('network'))) {
         setLoadingMessage(`Connection failed, retrying... (${retryCount + 1}/2)`);
         setTimeout(() => fetchData(retryCount + 1), 2000);
         return;
       }
-      
+
       // Only show notification if it's not a background refresh
       if (activeTab !== 'admin') {
         setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
@@ -452,28 +452,28 @@ export default function App() {
   // Reordering Functions
   const handleMovePost = async (id: number, direction: 'up' | 'down') => {
     if (!token) return;
-    
+
     const currentPosts = [...projects];
     const index = currentPosts.findIndex(p => p.id === id);
-    
+
     if (index === -1) return;
-    
+
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     if (newIndex < 0 || newIndex >= currentPosts.length) return;
-    
+
     // Swap items in array
     const [movedItem] = currentPosts.splice(index, 1);
     currentPosts.splice(newIndex, 0, movedItem);
-    
+
     // Update sort_order values
     const updatedPosts = currentPosts.map((post, idx) => ({
       ...post,
       sort_order: idx
     }));
-    
+
     setProjects(updatedPosts);
-    
+
     // Update each item in database
     try {
       for (const post of updatedPosts) {
@@ -504,28 +504,28 @@ export default function App() {
 
   const handleMoveExperience = async (id: number, direction: 'up' | 'down') => {
     if (!token) return;
-    
+
     const currentExperience = [...experience];
     const index = currentExperience.findIndex(e => e.id === id);
-    
+
     if (index === -1) return;
-    
+
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     if (newIndex < 0 || newIndex >= currentExperience.length) return;
-    
+
     // Swap items in array
     const [movedItem] = currentExperience.splice(index, 1);
     currentExperience.splice(newIndex, 0, movedItem);
-    
+
     // Update sort_order values
     const updatedExperience = currentExperience.map((exp, idx) => ({
       ...exp,
       sort_order: idx
     }));
-    
+
     setExperience(updatedExperience);
-    
+
     // Update each item in database
     try {
       for (const exp of updatedExperience) {
@@ -1010,7 +1010,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            {token && (
+            {/* {token && (
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`hidden md:flex items-center gap-2 text-sm font-medium transition-colors ${activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
@@ -1019,7 +1019,7 @@ export default function App() {
                 <Activity className="w-4 h-4" />
                 <span>Dashboard</span>
               </button>
-            )}
+            )} */}
 
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
 
@@ -1042,8 +1042,8 @@ export default function App() {
                 <Mail className="w-4 h-4" />
               </a> */}
             </div>
-{/* //commit */}
-            {token ? (
+            {/* //commit */}
+            {/* {token ? (
               <button
                 onClick={handleLogout}
                 className="hidden md:flex items-center gap-2 text-zinc-400 hover:text-zinc-100 text-sm transition-colors"
@@ -1059,7 +1059,7 @@ export default function App() {
                 <Lock className="w-4 h-4" />
                 <span>Login</span>
               </button>
-            )}
+            )} */}
 
             {/* Mobile Menu Toggle */}
             <button
@@ -1098,9 +1098,10 @@ export default function App() {
                   className="text-left text-lg font-medium text-zinc-400 hover:text-emerald-500 transition-colors"
                 >
                   Code Lab
+
                 </button>
                 <div className="h-px bg-zinc-800 my-2" />
-                {token ? (
+                {/* {token ? (
                   <>
                     <button
                       onClick={() => {
@@ -1134,7 +1135,7 @@ export default function App() {
                     <Lock className="w-5 h-5" />
                     Login
                   </button>
-                )}
+                )} */}
               </div>
             </motion.div>
           )}
@@ -1617,11 +1618,11 @@ export default function App() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
                       <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
                     </div>
-                    
+
                     <h3 className="text-xl font-semibold text-zinc-100 mb-2">
                       {isWakingUp ? 'Waking Up Database' : 'Loading Portfolio'}
                     </h3>
-                    
+
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
                       {loadingMessage}
                     </p>
@@ -1692,11 +1693,11 @@ export default function App() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
                       <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
                     </div>
-                    
+
                     <h3 className="text-xl font-semibold text-zinc-100 mb-2">
                       {isWakingUp ? 'Waking Up Database' : 'Loading Code Code Lab'}
                     </h3>
-                    
+
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
                       {loadingMessage}
                     </p>
@@ -2276,16 +2277,16 @@ export default function App() {
                                       <p className="text-[10px] text-zinc-500">{post.status}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button 
-                                        onClick={() => handleMovePost(post.id, 'up')} 
+                                      <button
+                                        onClick={() => handleMovePost(post.id, 'up')}
                                         disabled={post.sort_order === 0}
                                         className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Move up"
                                       >
                                         <ChevronUp className="w-3.5 h-3.5" />
                                       </button>
-                                      <button 
-                                        onClick={() => handleMovePost(post.id, 'down')} 
+                                      <button
+                                        onClick={() => handleMovePost(post.id, 'down')}
                                         disabled={post.sort_order === projects.length - 1}
                                         className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Move down"
@@ -2343,16 +2344,16 @@ export default function App() {
                                       <p className="text-[10px] text-zinc-500">{exp.period}</p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button 
-                                        onClick={() => handleMoveExperience(exp.id, 'up')} 
+                                      <button
+                                        onClick={() => handleMoveExperience(exp.id, 'up')}
                                         disabled={exp.sort_order === 0}
                                         className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Move up"
                                       >
                                         <ChevronUp className="w-3.5 h-3.5" />
                                       </button>
-                                      <button 
-                                        onClick={() => handleMoveExperience(exp.id, 'down')} 
+                                      <button
+                                        onClick={() => handleMoveExperience(exp.id, 'down')}
                                         disabled={exp.sort_order === experience.length - 1}
                                         className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Move down"
@@ -2564,7 +2565,7 @@ export default function App() {
               <ul className="space-y-4">
                 {['home', 'projects', 'snippets'].map((tab) => (
                   <li key={tab}>
-                    <button 
+                    <button
                       onClick={() => {
                         setActiveTab(tab as any);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2576,7 +2577,7 @@ export default function App() {
                   </li>
                 ))}
                 <li>
-                  <button 
+                  <button
                     onClick={() => setShowLogin(true)}
                     className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors"
                   >
@@ -2623,7 +2624,7 @@ export default function App() {
                 <Activity className="w-3 h-3 text-emerald-500" />
                 System Status: <span className="text-emerald-500">Operational</span>
               </p>
-              <button 
+              <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="text-[10px] text-zinc-500 hover:text-emerald-500 transition-colors flex items-center gap-1"
               >
