@@ -1010,16 +1010,20 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* {token && (
+            {token && (
               <button
-                onClick={() => setActiveTab('admin')}
-                className={`hidden md:flex items-center gap-2 text-sm font-medium transition-colors ${activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
-                  }`}
+                onClick={() => {
+                  setActiveTab('admin');
+                  setIsMenuOpen(false);
+                }}
+                className={`flex items-center gap-2 text-lg font-medium transition-colors ${
+                  activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
+                }`}
               >
-                <Activity className="w-4 h-4" />
-                <span>Dashboard</span>
+                <Activity className="w-5 h-5" />
+                Dashboard
               </button>
-            )} */}
+            )}
 
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
 
@@ -1042,8 +1046,7 @@ export default function App() {
                 <Mail className="w-4 h-4" />
               </a> */}
             </div>
-            {/* //commit */}
-            {/* {token ? (
+            {token ? (
               <button
                 onClick={handleLogout}
                 className="hidden md:flex items-center gap-2 text-zinc-400 hover:text-zinc-100 text-sm transition-colors"
@@ -1059,7 +1062,7 @@ export default function App() {
                 <Lock className="w-4 h-4" />
                 <span>Login</span>
               </button>
-            )} */}
+            )}
 
             {/* Mobile Menu Toggle */}
             <button
@@ -1101,7 +1104,7 @@ export default function App() {
 
                 </button>
                 <div className="h-px bg-zinc-800 my-2" />
-                {/* {token ? (
+                {token ? (
                   <>
                     <button
                       onClick={() => {
@@ -1135,7 +1138,7 @@ export default function App() {
                     <Lock className="w-5 h-5" />
                     Login
                   </button>
-                )} */}
+                )}
               </div>
             </motion.div>
           )}
