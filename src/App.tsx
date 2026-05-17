@@ -1307,7 +1307,7 @@ export default function App() {
                       Wondwosen <span className="text-emerald-500">Endale.</span>
                     </h1>
                     <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed mb-10">
-                    Full Stack Developer with 2 years of experience... seeking a role where I can apply my skills in building
+                    Full Stack Developer with 3 years of experience... seeking a role where I can apply my skills in building
 scalable AI-enhanced applications. Collaborative team player focused on delivering measurable
 business impact through high-quality, testable code.
                     </p>
@@ -1369,7 +1369,7 @@ business impact through high-quality, testable code.
                       <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full opacity-50 animate-pulse" />
                       <div className="absolute -top-6 -right-6 w-24 h-24 bg-zinc-900 border border-zinc-800 rounded-3xl flex items-center justify-center shadow-2xl z-20 hidden md:flex">
                         <div className="text-center">
-                          <span className="block text-2xl font-bold text-emerald-500">2+</span>
+                          <span className="block text-2xl font-bold text-emerald-500">3+</span>
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Years Exp.</span>
                         </div>
                       </div>
