@@ -162,7 +162,9 @@ export default function App() {
   const [editingCertId, setEditingCertId] = useState<number | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('about');
-  const [adminModule, setAdminModule] = useState<'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'messages'>('overview');
+  const [adminModule, setAdminModule] = useState<
+    'overview' | 'projects' | 'snippets' | 'experience' | 'skills' | 'certifications' | 'messages' | 'settings'
+  >('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -250,6 +252,7 @@ export default function App() {
         apiFetch('/api/skills'),
         apiFetch('/api/certifications'),
         apiFetch('/api/stats'),
+        apiFetch('/api/settings'),
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
 
@@ -262,6 +265,7 @@ export default function App() {
         processResponse(skillRes),
         processResponse(certRes),
         processResponse(statRes),
+        processResponse(settingsRes),
         msgRes ? processResponse(msgRes) : Promise.resolve([])
       ]);
 
@@ -271,6 +275,7 @@ export default function App() {
       setSkills(skillData);
       setCertifications(certData);
       setStats(statData);
+      setSettings((prev) => ({ ...prev, ...settingsData }));
       setMessages(msgData);
 
       clearTimeout(timeoutId);
@@ -1807,10 +1812,11 @@ business impact through high-quality, testable code.
                       { id: 'skills', name: 'Skills', icon: Wrench },
                       { id: 'certifications', name: 'Certifications', icon: Award },
                       { id: 'messages', name: 'Inbox', icon: Inbox },
+                      { id: 'settings', name: 'Settings', icon: Settings },
                     ].map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => setAdminModule(item.id as any)}
+                        onClick={() => setAdminModule(item.id as typeof adminModule)}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                           adminModule === item.id 
                             ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
@@ -1851,6 +1857,7 @@ business impact through high-quality, testable code.
                           {adminModule === 'skills' && <Wrench className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'certifications' && <Award className="w-6 h-6 text-emerald-500" />}
                           {adminModule === 'messages' && <Inbox className="w-6 h-6 text-emerald-500" />}
+                          {adminModule === 'settings' && <Settings className="w-6 h-6 text-emerald-500" />}
                           {adminModule}
                         </h2>
                         
@@ -1973,54 +1980,6 @@ business impact through high-quality, testable code.
                             </div>
                           </div>
                         </div>
-                            {/* Content Pie Chart */}
-                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
-                              <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
-                                <PieChartIcon className="w-4 h-4 text-emerald-500" />
-                                Content Mix
-                              </h4>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={[
-                                      { name: 'Projects', value: projects.length },
-                                      { name: 'Code Lab', value: snippets.length },
-                                      { name: 'Experience', value: experience.length },
-                                    ]}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                  >
-                                    <Cell fill="#10b981" />
-                                    <Cell fill="#3b82f6" />
-                                    <Cell fill="#8b5cf6" />
-                                  </Pie>
-                                  <Tooltip
-                                    contentStyle={{
-                                      backgroundColor: theme === 'dark' ? '#151516' : '#ffffff',
-                                      border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
-                                      borderRadius: '12px',
-                                      color: theme === 'dark' ? '#f4f4f5' : '#09090b'
-                                    }}
-                                  />
-                                </PieChart>
-                              </ResponsiveContainer>
-                              <div className="flex justify-center gap-4 mt-4">
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Code Lab
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
-                                  <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
-                                </div>
-                              </div>
-                            </div>
-                          </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {/* Recent Messages */}
