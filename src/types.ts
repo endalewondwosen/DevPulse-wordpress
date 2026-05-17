@@ -5,6 +5,7 @@ export interface Post {
   type: 'project' | 'snippet';
   status: 'publish' | 'private';
   image_url?: string;
+  sort_order: number;
   meta: {
     github_url?: string;
     project_url?: string;
@@ -14,6 +15,7 @@ export interface Post {
     solution?: string;
     impact?: string;
     architecture?: string;
+    code?: string;
   };
   created_at: string;
 }

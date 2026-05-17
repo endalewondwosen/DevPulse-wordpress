@@ -1,7 +1,4 @@
 import express, { Request, Response, NextFunction } from "express";
-import dotenv from "dotenv";
-dotenv.config();
-
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import pg from "pg";
@@ -10,13 +7,12 @@ import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
-import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = "devpulse-secret-key-123";
-//
+
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
 let pgPool: pg.Pool | null = null;
@@ -115,12 +111,23 @@ async function initDb() {
     // Column likely already exists
   }
 
-  // Migration for messages.status
+  // Migration for sort_order in skills
   try {
     if (isPostgres) {
-      await exec(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'unread'`);
+      await exec(`ALTER TABLE skills ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
     } else {
-      await exec(`ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'unread'`);
+      await exec(`ALTER TABLE skills ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
+
+  // Migration for sort_order in certifications
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE certifications ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
+    } else {
+      await exec(`ALTER TABLE certifications ADD COLUMN sort_order INTEGER DEFAULT 0`);
     }
   } catch (e) {
     // Column likely already exists
@@ -190,6 +197,8 @@ async function initDb() {
 
   if (count === 0) {
     console.log("Seeding initial data...");
+    
+    // Seed Projects
     const projects = [
       {
         title: "E-service portal",
@@ -230,184 +239,91 @@ async function initDb() {
         }
       }
     }
-  }
 
-  // Seed Snippets if empty
-  const snippetCountRes = await queryOne("SELECT COUNT(*) as count FROM posts WHERE type = 'snippet'");
-  if (parseInt(snippetCountRes.count) === 0) {
-    const snippets = [
-    {
-      title: "React Database Retry Hook",
-      content: "A robust custom hook for handling database connections with automatic retries and 'waking up' state management. Perfect for serverless databases with cold starts.",
-      type: "snippet",
-      meta: { 
-        language: "typescript", 
-        code: `const useDatabaseRetry = (fetchFn, maxRetries = 3) => {
-  const [loading, setLoading] = useState(true);
-  const [isWakingUp, setIsWakingUp] = useState(false);
+    // Seed Experience
+    await query("INSERT INTO experience (company, role, period, description, sort_order) VALUES ($1, $2, $3, $4, $5)", [
+      "Adnan Business Group Technology Company", 
+      "Full stack Developer", 
+      "May 2024 - Present", 
+      "Developing web applications for Adama, Shagger, and Dire Dawa city e-services, traffic management systems, and project management tools.", 
+      1
+    ]);
 
-  const execute = async (retryCount = 0) => {
-    try {
-      await fetchFn();
-      setLoading(false);
-      setIsWakingUp(false);
-    } catch (err) {
-      if (retryCount < maxRetries) {
-        setIsWakingUp(true);
-        setTimeout(() => execute(retryCount + 1), 3000);
-      } else {
-        setLoading(false);
-        setIsWakingUp(false);
+    // Seed Skills if empty
+    const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
+    const skillCount = parseInt(skillCountRes.count);
+
+    if (skillCount === 0) {
+      const skills = [
+        { cat: "frontend", name: "React JS / Next JS", order: 1 },
+        { cat: "frontend", name: "TypeScript", order: 2 },
+        { cat: "frontend", name: "Tailwind CSS", order: 3 },
+        { cat: "frontend", name: "Redux / Zustand", order: 4 },
+        { cat: "backend", name: "Node.js / Express", order: 1 },
+        { cat: "backend", name: "Nest JS", order: 2 },
+        { cat: "backend", name: "Laravel / PHP", order: 3 },
+        { cat: "backend", name: "Prisma ORM", order: 4 },
+        { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
+        { cat: "devops", name: "MongoDB", order: 2 },
+        { cat: "devops", name: "Docker / Git", order: 3 },
+        { cat: "additional", name: "AI Prompt Engineering", order: 1 },
+        { cat: "additional", name: "System Design", order: 2 },
+        { cat: "additional", name: "Microservices", order: 3 }
+      ];
+
+      for (const s of skills) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
       }
     }
-  };
 
-  return { loading, isWakingUp, execute };
-};`
-      }
-    },
-    {
-      title: "Express Unified Query Helper",
-      content: "A clean utility function that abstracts database interactions, supporting both SQLite for local development and PostgreSQL for production environments.",
-      type: "snippet",
-      meta: { 
-        language: "javascript", 
-        code: `async function query(text, params = []) {
-  if (isPostgres) {
-    const res = await pgPool.query(text, params);
-    return res.rows;
-  } else {
-    const sqliteText = text.replace(/\\$(\\d+)/g, '?');
-    const stmt = sqliteDb.prepare(sqliteText);
-    if (text.trim().toUpperCase().startsWith("SELECT")) {
-      return stmt.all(...params);
-    } else {
-      const result = stmt.run(...params);
-      return { lastInsertRowid: result.lastInsertRowid, changes: result.changes };
-    }
-  }
-};`
-      }
-    },
-    {
-      title: "Tailwind Shimmer Animation",
-      content: "Custom Tailwind CSS configuration and utility classes for creating smooth, high-performance skeleton loader shimmer effects.",
-      type: "snippet",
-      meta: { 
-        language: "css", 
-        code: `@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite linear;
-}`
-      }
-    }
-  ];
-
-  for (const s of snippets) {
-    let postId;
-    if (isPostgres) {
-      const res = await query("INSERT INTO posts (title, content, type) VALUES ($1, $2, $3) RETURNING id", [s.title, s.content, s.type]);
-      postId = res[0].id;
-    } else {
-      const res = await query("INSERT INTO posts (title, content, type) VALUES ($1, $2, $3)", [s.title, s.content, s.type]);
-      postId = res.lastInsertRowid;
-    }
-    
-    if (s.meta) {
-      for (const [key, value] of Object.entries(s.meta)) {
-        await query("INSERT INTO post_meta (post_id, meta_key, meta_value) VALUES ($1, $2, $3)", [postId, key, value]);
-      }
-    }
-  }
-  }
-
-  // Seed Experience if empty
-  const expCountRes = await queryOne("SELECT COUNT(*) as count FROM experience");
-  // Seed Skills if empty
-  const skillCountRes = await queryOne("SELECT COUNT(*) as count FROM skills");
-  const skillCount = parseInt(skillCountRes.count);
-  if (skillCount === 0) {
-    const skills = [
-      { cat: "frontend", name: "React JS / Next JS", order: 1 },
-      { cat: "frontend", name: "TypeScript", order: 2 },
-      { cat: "frontend", name: "Tailwind CSS", order: 3 },
-      { cat: "frontend", name: "Redux / Zustand", order: 4 },
-      { cat: "backend", name: "Node.js / Express", order: 1 },
-      { cat: "backend", name: "Nest JS", order: 2 },
-      { cat: "backend", name: "Laravel / PHP", order: 3 },
-      { cat: "backend", name: "Prisma ORM", order: 4 },
-      { cat: "devops", name: "PostgreSQL / MySQL", order: 1 },
-      { cat: "devops", name: "MongoDB", order: 2 },
-      { cat: "devops", name: "Docker / Git", order: 3 },
-      { cat: "additional", name: "AI Prompt Engineering", order: 1 },
-      { cat: "additional", name: "System Design", order: 2 },
-      { cat: "additional", name: "Microservices", order: 3 }
+    // Ensure specific requested skills exist
+    const requestedSkills = [
+      { cat: "frontend", name: "Redux" },
+      { cat: "frontend", name: "Zustand" },
+      { cat: "backend", name: "Prisma" },
+      { cat: "devops", name: "PostgreSQL" },
+      { cat: "devops", name: "MySQL" },
+      { cat: "devops", name: "MongoDB" },
+      { cat: "devops", name: "Docker" },
+      { cat: "devops", name: "Git" },
+      { cat: "additional", name: "AI Prompt Engineering" }
     ];
 
-    for (const s of skills) {
-      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, s.order]);
+    for (const s of requestedSkills) {
+      const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
+      if (!exists) {
+        await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+      }
     }
-  }
 
-  // Ensure specific requested skills exist
-  const requestedSkills = [
-    { cat: "frontend", name: "Redux" },
-    { cat: "frontend", name: "Zustand" },
-    { cat: "backend", name: "Prisma" },
-    { cat: "devops", name: "PostgreSQL" },
-    { cat: "devops", name: "MySQL" },
-    { cat: "devops", name: "MongoDB" },
-    { cat: "devops", name: "Docker" },
-    { cat: "devops", name: "Git" },
-    { cat: "additional", name: "AI Prompt Engineering" }
-  ];
-
-  for (const s of requestedSkills) {
-    const exists = await queryOne("SELECT id FROM skills WHERE name = $1", [s.name]);
-    if (!exists) {
-      await query("INSERT INTO skills (category, name, sort_order) VALUES ($1, $2, $3)", [s.cat, s.name, 99]);
+    // Seed Certifications if empty
+    const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
+    const certCount = parseInt(certCountRes.count);
+    if (certCount === 0) {
+      const certs = [
+        { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
+        { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
+        { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
+      ];
+      for (const c of certs) {
+        await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
+      }
     }
-  }
 
-  // Seed Certifications if empty
-  const certCountRes = await queryOne("SELECT COUNT(*) as count FROM certifications");
-  const certCount = parseInt(certCountRes.count);
-  if (certCount === 0) {
-    const certs = [
-      { name: "Full Stack Web Development", issuer: "Udemy", date: "2023", url: "#", order: 1 },
-      { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "2024", url: "#", order: 2 },
-      { name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", date: "2023", url: "#", order: 3 }
-    ];
-    for (const c of certs) {
-      await query("INSERT INTO certifications (name, issuer, date, url, sort_order) VALUES ($1, $2, $3, $4, $5)", [c.name, c.issuer, c.date, c.url, c.order]);
-    }
-  }
-
-  // Seed Settings if empty
-  const settingsCountRes = await queryOne("SELECT COUNT(*) as count FROM settings");
-  const settingsCount = parseInt(settingsCountRes.count);
-  if (settingsCount === 0) {
-    const defaultSettings = [
-      { key: 'profile_image', value: '/profile.png' },
-      { key: 'resume_url', value: '/resume.pdf' },
-      { key: 'site_title', value: 'DevPulse Portfolio' },
-      { key: 'hero_title', value: 'Architecting Digital Excellence' },
-      { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' },
-      { key: 'contact_email', value: 'endalewondwosen@gmail.com' }
-    ];
-    for (const s of defaultSettings) {
-      await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);
+    // Seed Settings if empty
+    const settingsCountRes = await queryOne("SELECT COUNT(*) as count FROM settings");
+    const settingsCount = parseInt(settingsCountRes.count);
+    if (settingsCount === 0) {
+      const defaultSettings = [
+        { key: 'profile_image', value: '/profile.jpg' },
+        { key: 'resume_url', value: '/resume.pdf' },
+        { key: 'site_title', value: 'DevPulse Portfolio' },
+        { key: 'hero_title', value: 'Architecting Digital Excellence' },
+        { key: 'hero_subtitle', value: 'Full Stack Engineer & System Architect' }
+      ];
+      for (const s of defaultSettings) {
+        await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [s.key, s.value]);
+      }
     }
   }
 }
@@ -415,39 +331,9 @@ async function initDb() {
 async function startServer() {
   await initDb();
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
-  const PUBLIC_SITE_URL =
-    process.env.PUBLIC_SITE_URL || "https://wondwosenportifolio.vercel.app";
-
-  app.use(cors({
-    origin: (origin, callback) => {
-      // Allow non-browser tools (no Origin header)
-      if (!origin) return callback(null, true);
-
-      const allowList = new Set([
-        "https://devpulse-wordpress.onrender.com",
-        "https://wondwosenportifolio.vercel.app", // legacy typo domain (kept for compatibility)
-        "https://wondwosenportfolio.vercel.app",
-      ]);
-
-      if (allowList.has(origin)) return callback(null, true);
-
-      // Allow Vercel previews like https://<branch>-<project>.vercel.app
-      if (origin.endsWith(".vercel.app")) return callback(null, true);
-
-      return callback(new Error("CORS: origin not allowed"), false);
-    },
-    credentials: true,
-  }));
+  const PORT = 3000;
 
   app.use(express.json());
-
-  // If this service is used as an API backend (e.g. Render),
-  // redirect the public root/non-API pages to the main Vercel site.
-  if (process.env.NODE_ENV === "production") {
-    app.get("/", (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
-    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => res.redirect(302, PUBLIC_SITE_URL));
-  }
 
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, "public", "uploads");
@@ -490,63 +376,6 @@ async function startServer() {
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
-  });
-
-  // Debug endpoint to check database structure and data
-  app.get("/api/debug/posts", async (req, res) => {
-    try {
-      // Check table structure
-      const structure = await query(`
-        SELECT column_name, data_type, is_nullable, column_default 
-        FROM information_schema.columns 
-        WHERE table_name = 'posts' 
-        ORDER BY ordinal_position
-      `);
-      
-      // Check actual data
-      const data = await query("SELECT id, title, image_url, sort_order FROM posts ORDER BY id LIMIT 10");
-      
-      res.json({
-        database: isPostgres ? 'PostgreSQL' : 'SQLite',
-        structure,
-        data,
-        count: data.length
-      });
-    } catch (error) {
-      console.error("Debug error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Debug endpoint to check uploads directory
-  app.get("/api/debug/uploads", (req, res) => {
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      
-      const uploadsDir = path.join(__dirname, "public", "uploads");
-      let files = [];
-      let dirExists = false;
-      
-      try {
-        files = fs.readdirSync(uploadsDir);
-        dirExists = true;
-      } catch (err) {
-        dirExists = false;
-      }
-      
-      res.json({
-        uploadsDir,
-        dirExists,
-        files: files.map(file => ({
-          name: file,
-          path: path.join(uploadsDir, file),
-          url: `/uploads/${file}`
-        }))
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
   });
 
   // Auth Middleware
@@ -602,7 +431,7 @@ async function startServer() {
   });
 
   // File Upload Route (Authenticated)
-  app.post("/api/upload", authenticateToken, upload.single('image'), (req, res) => {
+  app.post("/api/upload", authenticateToken, upload.single('file'), (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
@@ -631,14 +460,18 @@ async function startServer() {
   app.post("/api/settings", authenticateToken, async (req, res) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+    
     const settings = req.body;
     try {
       for (const [key, value] of Object.entries(settings)) {
-        if (isPostgres) {
-          await query("INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
-        } else {
-          // SQLite version
+        await query("INSERT INTO settings (key, value) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
+      }
+      res.json({ message: "Settings updated" });
+    } catch (error) {
+      // Handle SQLite vs Postgres conflict syntax if needed, but ON CONFLICT works in both modern versions
+      try {
+        // Fallback for older SQLite if needed
+        for (const [key, value] of Object.entries(settings)) {
           const exists = await queryOne("SELECT id FROM settings WHERE key = $1", [key]);
           if (exists) {
             await query("UPDATE settings SET value = $1 WHERE key = $2", [value, key]);
@@ -646,11 +479,10 @@ async function startServer() {
             await query("INSERT INTO settings (key, value) VALUES ($1, $2)", [key, value]);
           }
         }
+        res.json({ message: "Settings updated" });
+      } catch (innerError) {
+        res.status(500).json({ error: "Failed to update settings" });
       }
-      res.json({ message: "Settings updated" });
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      res.status(500).json({ error: "Failed to update settings" });
     }
   });
 
@@ -660,17 +492,6 @@ async function startServer() {
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
     const { title, content, type, status, image_url, meta, sort_order } = req.body;
-    
-    // Debug logging
-    console.log("POST /api/posts received:", {
-      title,
-      content,
-      type,
-      status,
-      image_url,
-      sort_order,
-      meta
-    });
     
     if (!title || !type) {
       return res.status(400).json({ error: "Title and Type are required" });
@@ -708,18 +529,6 @@ async function startServer() {
 
     const { id } = req.params;
     const { title, content, type, status, image_url, meta, sort_order } = req.body;
-    
-    // Debug logging
-    console.log("PUT /api/posts received:", {
-      id,
-      title,
-      content,
-      type,
-      status,
-      image_url,
-      sort_order,
-      meta
-    });
 
     try {
       const result = await query("UPDATE posts SET title = $1, content = $2, type = $3, status = $4, image_url = $5, sort_order = $6 WHERE id = $7", [title, content || "", type, status || "publish", image_url || null, sort_order || 0, id]);
@@ -1038,16 +847,31 @@ async function startServer() {
   });
 
   // Resume Download Route
-  app.get("/api/resume/download", (req, res) => {
-    const resumePath = path.join(__dirname, "public", "resume.pdf");
-    
-    // Check if file exists
-    if (fs.existsSync(resumePath)) {
-      res.setHeader('Content-Disposition', 'attachment; filename=Wondwosen_Endale_Resume.pdf');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.sendFile(resumePath);
-    } else {
-      res.status(404).json({ error: "Resume file not found" });
+  app.get("/api/resume/download", async (req, res) => {
+    try {
+      const setting = await queryOne("SELECT value FROM settings WHERE key = 'resume_url'");
+      const resumeUrl = setting ? setting.value : '/resume.pdf';
+      
+      if (resumeUrl.startsWith('/uploads/')) {
+        const filePath = path.join(__dirname, resumeUrl);
+        if (fs.existsSync(filePath)) {
+          res.setHeader('Content-Disposition', 'attachment; filename=Resume.pdf');
+          res.setHeader('Content-Type', 'application/pdf');
+          return res.sendFile(filePath);
+        }
+      }
+      
+      // Fallback to public folder if it's a simple path or file not found in uploads
+      const publicPath = path.join(__dirname, "public", resumeUrl.replace(/^\//, ''));
+      if (fs.existsSync(publicPath)) {
+        res.setHeader('Content-Disposition', 'attachment; filename=Resume.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+        return res.sendFile(publicPath);
+      }
+
+      res.status(404).send("Resume file not found. Please upload it in the admin panel.");
+    } catch (error) {
+      res.status(500).send("Error retrieving resume.");
     }
   });
 

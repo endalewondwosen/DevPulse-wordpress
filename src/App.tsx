@@ -8,6 +8,8 @@ import {
   Layout, 
   Activity,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Box,
   Cpu,
   Lock,
@@ -57,6 +59,11 @@ import Markdown from 'react-markdown';
 
 import { ProjectCard } from './components/ProjectCard';
 import { SnippetItem } from './components/SnippetItem';
+import { AIChatAssistant } from './components/AIChatAssistant';
+import { ProjectDeepDive } from './components/ProjectDeepDive';
+import { SnippetDeepDive } from './components/SnippetDeepDive';
+import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/ProjectSkeleton';
+
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
@@ -78,7 +85,18 @@ export default function App() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({
+    profile_image: '/profile.png',
+    resume_url: '/resume.pdf',
+    site_title: 'Wondwosen Endale Portifolio',
+    hero_title: 'Architecting Digital Excellence',
+    hero_subtitle: 'Full Stack Engineer & System Architect',
+    contact_email: 'endalewondwosen@gmail.com'
+  });
   const [loading, setLoading] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Connecting to database...');
+  const [showSlowConnectionWarning, setShowSlowConnectionWarning] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'snippets' | 'admin'>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [token, setToken] = useState<string | null>(localStorage.getItem('devpulse_token'));
@@ -96,11 +114,16 @@ export default function App() {
     type: 'project' as 'project' | 'snippet',
     status: 'publish' as 'publish' | 'private',
     image_url: '',
+    sort_order: 0,
     meta: {
       github_url: '',
       project_url: '',
       tech_stack: '',
-      language: ''
+      language: '',
+      challenge: '',
+      solution: '',
+      impact: '',
+      architecture: ''
     }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,6 +166,8 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [geminiReport, setGeminiReport] = useState<string>('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Post | null>(null);
+  const [selectedSnippet, setSelectedSnippet] = useState<Post | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -189,12 +214,25 @@ export default function App() {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
     });
-
     return () => observer.disconnect();
   }, [activeTab]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (retryCount = 0) => {
+    if (retryCount === 0) {
+      setLoading(true);
+      setLoadingMessage('Connecting to database...');
+      setShowSlowConnectionWarning(false);
+    }
+
+    // Set up timeout for slow connections
+    const timeoutId = setTimeout(() => {
+      if (retryCount === 0) {
+        setIsWakingUp(true);
+        setLoadingMessage('Database is waking up (Neon free tier)...');
+        setShowSlowConnectionWarning(true);
+      }
+    }, 3000); // Show warning after 3 seconds
+
     try {
       const headers: any = {};
       if (token) {
@@ -203,7 +241,9 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      const [projRes, snipRes, expRes, skillRes, certRes, statRes, msgRes] = await Promise.all([
+      setLoadingMessage('Fetching portfolio data...');
+
+      const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
         apiFetch(`/api/posts?type=snippet${searchParam}`, { headers }),
         apiFetch('/api/experience'),
@@ -212,8 +252,10 @@ export default function App() {
         apiFetch('/api/stats'),
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
-      
-      const [projData, snipData, expData, skillData, certData, statData, msgData] = await Promise.all([
+
+      setLoadingMessage('Processing data...');
+
+      const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
         processResponse(snipRes),
         processResponse(expRes),
@@ -230,14 +272,29 @@ export default function App() {
       setCertifications(certData);
       setStats(statData);
       setMessages(msgData);
+
+      clearTimeout(timeoutId);
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("Error fetching data:", error);
+
+      // Retry logic for network errors (common with cold starts)
+      if (retryCount < 2 && (error.message.includes('fetch') || error.message.includes('network'))) {
+        setLoadingMessage(`Connection failed, retrying... (${retryCount + 1}/2)`);
+        setTimeout(() => fetchData(retryCount + 1), 2000);
+        return;
+      }
+
       // Only show notification if it's not a background refresh
       if (activeTab !== 'admin') {
         setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
       }
     } finally {
-      setLoading(false);
+      if (retryCount === 0 || retryCount >= 2) {
+        setLoading(false);
+        setIsWakingUp(false);
+        setShowSlowConnectionWarning(false);
+      }
     }
   };
 
@@ -280,6 +337,16 @@ export default function App() {
   };
 
   const handlePostClick = async (id: number) => {
+    // Find the project by ID
+    const project = projects.find(p => p.id === id);
+    if (project) {
+      setSelectedProject(project);
+    }
+    // Find the snippet by ID
+    const snippet = snippets.find(s => s.id === id);
+    if (snippet) {
+      setSelectedSnippet(snippet);
+    }
     // Trigger the logging middleware on the server
     await apiFetch(`/api/posts/${id}`);
     fetchData(); // Refresh stats
@@ -337,10 +404,11 @@ export default function App() {
       setNewPost({
         title: '',
         content: '',
-        type: 'project',
+        type: adminModule === 'projects' ? 'project' : 'snippet',
         status: 'publish',
         image_url: '',
-        meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+        sort_order: 0,
+        meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
       });
       setEditingId(null);
       fetchData();
@@ -374,7 +442,109 @@ export default function App() {
     }
   };
 
-  // Experience Handlers
+  // Reordering Functions
+  const handleMovePost = async (id: number, direction: 'up' | 'down') => {
+    if (!token) return;
+
+    const currentPosts = [...projects];
+    const index = currentPosts.findIndex(p => p.id === id);
+
+    if (index === -1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= currentPosts.length) return;
+
+    // Swap items in array
+    const [movedItem] = currentPosts.splice(index, 1);
+    currentPosts.splice(newIndex, 0, movedItem);
+
+    // Update sort_order values
+    const updatedPosts = currentPosts.map((post, idx) => ({
+      ...post,
+      sort_order: idx
+    }));
+
+    setProjects(updatedPosts);
+
+    // Update each item in database
+    try {
+      for (const post of updatedPosts) {
+        await apiFetch(`/api/posts/${post.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: post.title,
+            content: post.content,
+            type: post.type,
+            status: post.status,
+            image_url: post.image_url || '',
+            meta: post.meta,
+            sort_order: post.sort_order
+          })
+        });
+      }
+      setNotification({ message: "Project order updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Reorder error:", error);
+      setNotification({ message: error.message || "Failed to update order", type: 'error' });
+      fetchData(); // Refresh to restore original order
+    }
+  };
+
+  const handleMoveExperience = async (id: number, direction: 'up' | 'down') => {
+    if (!token) return;
+
+    const currentExperience = [...experience];
+    const index = currentExperience.findIndex(e => e.id === id);
+
+    if (index === -1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= currentExperience.length) return;
+
+    // Swap items in array
+    const [movedItem] = currentExperience.splice(index, 1);
+    currentExperience.splice(newIndex, 0, movedItem);
+
+    // Update sort_order values
+    const updatedExperience = currentExperience.map((exp, idx) => ({
+      ...exp,
+      sort_order: idx
+    }));
+
+    setExperience(updatedExperience);
+
+    // Update each item in database
+    try {
+      for (const exp of updatedExperience) {
+        await apiFetch(`/api/experience/${exp.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            company: exp.company,
+            role: exp.role,
+            period: exp.period,
+            description: exp.description,
+            sort_order: exp.sort_order
+          })
+        });
+      }
+      setNotification({ message: "Experience order updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Reorder error:", error);
+      setNotification({ message: error.message || "Failed to update order", type: 'error' });
+      fetchData(); // Refresh to restore original order
+    }
+  };
+
   const handleCreateExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -575,6 +745,89 @@ export default function App() {
     }
   };
 
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSubmitting(true);
+    try {
+      const res = await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(settings)
+      });
+      await processResponse(res);
+      fetchData();
+      setNotification({ message: "Settings updated successfully", type: 'success' });
+    } catch (error: any) {
+      console.error("Error updating settings:", error);
+      setNotification({ message: error.message || "Failed to update settings", type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSettingFileUpload = async (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setNotification({ message: "File too large (max 10MB)", type: 'error' });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      // Upload file first
+      const uploadRes = await apiFetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const uploadData = await processResponse(uploadRes);
+
+      if (!uploadData || !uploadData.url) {
+        throw new Error('Upload failed - no URL returned');
+      }
+
+      const newUrl = uploadData.url;
+
+      // Verify the file exists by trying to access it
+      try {
+        const testRes = await fetch(newUrl, { method: 'HEAD' });
+        if (!testRes.ok) {
+          throw new Error('Uploaded file not accessible');
+        }
+      } catch (verifyError) {
+        throw new Error('File upload verification failed');
+      }
+
+      // Save to settings only after verifying file exists
+      await apiFetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ [key]: newUrl })
+      });
+
+      // Update local state only after both operations succeed
+      setSettings(prev => ({ ...prev, [key]: newUrl }));
+      setNotification({ message: `${key.replace('_', ' ')} updated successfully`, type: 'success' });
+    } catch (error: any) {
+      console.error("Setting upload error:", error);
+      setNotification({ message: error.message || "Upload failed", type: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDeleteMessage = async (id: number) => {
     if (!token) return;
     try {
@@ -603,7 +856,7 @@ export default function App() {
             text: `As a portfolio analytics assistant, analyze the following data and provide a concise, professional summary report for the developer. 
             Data:
             - Projects: ${projects.length}
-            - Snippets: ${snippets.length}
+            - Code Lab: ${snippets.length}
             - Total Messages: ${messages.length} (${messages.filter(m => m.status === 'unread').length} unread)
             - Top Skills: ${skills.map(s => s.name).join(', ')}
             - API Activity: ${JSON.stringify(stats)}
@@ -629,11 +882,16 @@ export default function App() {
       type: post.type,
       status: post.status,
       image_url: post.image_url || '',
+      sort_order: post.sort_order || 0,
       meta: {
         github_url: post.meta.github_url || '',
         project_url: post.meta.project_url || '',
         tech_stack: post.meta.tech_stack || '',
-        language: post.meta.language || ''
+        language: post.meta.language || '',
+        challenge: post.meta.challenge || '',
+        solution: post.meta.solution || '',
+        impact: post.meta.impact || '',
+        architecture: post.meta.architecture || ''
       }
     });
     // Scroll to form
@@ -648,7 +906,8 @@ export default function App() {
       type: 'project',
       status: 'publish',
       image_url: '',
-      meta: { github_url: '', project_url: '', tech_stack: '', language: '' }
+      sort_order: 0,
+      meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' }
     });
   };
 
@@ -747,19 +1006,23 @@ export default function App() {
               onClick={() => setActiveTab('snippets')}
               className={navLinkClass(activeTab === 'snippets')}
             >
-              Snippets
+              Code Lab
             </button>
           </div>
 
           <div className="flex items-center gap-4">
             {token && (
               <button
-                type="button"
-                onClick={() => setActiveTab('admin')}
-                className={`hidden md:flex items-center gap-2 ${navLinkClass(activeTab === 'admin')}`}
+                onClick={() => {
+                  setActiveTab('admin');
+                  setIsMenuOpen(false);
+                }}
+                className={`flex items-center gap-2 text-lg font-medium transition-colors ${
+                  activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
+                }`}
               >
-                <Activity className="w-4 h-4" />
-                <span>Dashboard</span>
+                <Activity className="w-5 h-5" />
+                Dashboard
               </button>
             )}
             
@@ -773,6 +1036,17 @@ export default function App() {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
+            <div className="flex items-center gap-2">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="GitHub">
+                <Github className="w-4 h-4" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="LinkedIn">
+                <Linkedin className="w-4 h-4" />
+              </a>
+              {/* <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="Email">
+                <Mail className="w-4 h-4" />
+              </a> */}
+            </div>
             {token ? (
               <button 
                 type="button"
@@ -839,7 +1113,8 @@ export default function App() {
                       : 'text-zinc-400 hover:text-emerald-500 hover:bg-zinc-800/50'
                   }`}
                 >
-                  Snippets
+                  Code Lab
+
                 </button>
                 <div className="h-px bg-zinc-800 my-2" />
                 {token ? (
@@ -972,7 +1247,8 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4"
               >
-                Headless <span className="text-emerald-500">Architecture</span>
+                Engineering <span className="text-emerald-500">Scalable Systems
+                </span>
               </motion.h1>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -980,8 +1256,7 @@ export default function App() {
                 transition={{ delay: 0.1 }}
                 className="text-zinc-400 text-xl leading-relaxed"
               >
-                A professional showcase of decoupled content management. 
-                WordPress-style API logic powering a high-performance React interface.
+                A professional showcase of modern full-stack architecture. Focused on performance, maintainability, and building robust digital products that drive real-world impact.
               </motion.p>
             </div>
 
@@ -1096,15 +1371,37 @@ business impact through high-quality, testable code.
                       
                       {/* Main Image Container */}
                       <div className="w-full h-full rounded-[3rem] overflow-hidden border-2 border-zinc-800 bg-zinc-900 relative group">
-                        <img 
-                          src="/profile.jpg" 
-                          alt="Wondwosen Endale" 
-                          className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800&h=800";
-                          }}
-                        />
+                        {loading ? (
+                          // Skeleton loader for profile image
+                          <div className="w-full h-full bg-zinc-800 animate-pulse flex items-center justify-center">
+                            <div className="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
+                              <User className="w-8 h-8 text-zinc-600" />
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={settings.profile_image || "/profile.png"}
+                            alt={settings.site_title || "Wondwosen Endale"}
+                            className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              // Show a generic silhouette instead of a random person
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = (e.target as HTMLImageElement).parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                    <div class="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
+                                      <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
 
@@ -1113,7 +1410,7 @@ business impact through high-quality, testable code.
                         <div className="flex -space-x-2">
                           <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900">TS</div>
                           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-black">R</div>
-                          <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-black">N</div>
+                          <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-white dark:text-white">N</div>
                         </div>
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stack</span>
                       </div>
@@ -1333,13 +1630,70 @@ business impact through high-quality, testable code.
               exit={{ opacity: 0, x: 20 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-              {projects.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
-                  onClick={() => handlePostClick(project.id)}
-                />
-              ))}
+              {loading ? (
+                <div className="col-span-full space-y-6">
+                  {/* Enhanced Loading Indicator */}
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
+                      <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
+                    </div>
+
+                    <h3 className="text-xl font-semibold text-zinc-100 mb-2">
+                      {isWakingUp ? 'Waking Up Database' : 'Loading Portfolio'}
+                    </h3>
+
+                    <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                      {loadingMessage}
+                    </p>
+
+                    {/* Slow Connection Warning */}
+                    {showSlowConnectionWarning && (
+                      <div className="max-w-md mx-auto p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <div className="flex items-center gap-3 text-amber-400">
+                          <Activity className="w-5 h-5 animate-pulse" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
+                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress Dots */}
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-emerald-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skeleton Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ProjectSkeleton />
+                    <ProjectSkeleton />
+                  </div>
+                </div>
+              ) : (
+                projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onClick={() => handlePostClick(project.id)}
+                  />
+                ))
+              )}
             </motion.div>
           )}
 
@@ -1351,13 +1705,68 @@ business impact through high-quality, testable code.
               exit={{ opacity: 0, x: 20 }}
               className="space-y-4"
             >
-              {snippets.map((snippet) => (
-                <SnippetItem 
-                  key={snippet.id} 
-                  snippet={snippet}
-                  onClick={() => handlePostClick(snippet.id)}
-                />
-              ))}
+              {loading ? (
+                <div className="space-y-6">
+                  {/* Enhanced Loading Indicator for Code Lab */}
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
+                      <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
+                    </div>
+
+                    <h3 className="text-xl font-semibold text-zinc-100 mb-2">
+                      {isWakingUp ? 'Waking Up Database' : 'Loading Code Code Lab'}
+                    </h3>
+
+                    <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                      {loadingMessage}
+                    </p>
+
+                    {/* Slow Connection Warning */}
+                    {showSlowConnectionWarning && (
+                      <div className="max-w-md mx-auto p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <div className="flex items-center gap-3 text-amber-400">
+                          <Activity className="w-5 h-5 animate-pulse" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
+                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress Dots */}
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-emerald-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skeleton Items */}
+                  <SnippetSkeleton />
+                  <SnippetSkeleton />
+                </div>
+              ) : (
+                snippets.map((snippet) => (
+                  <SnippetItem
+                    key={snippet.id}
+                    snippet={snippet}
+                    onClick={() => handlePostClick(snippet.id)}
+                  />
+                ))
+              )}
             </motion.div>
           )}
 
@@ -1393,7 +1802,7 @@ business impact through high-quality, testable code.
                     {[
                       { id: 'overview', name: 'Overview', icon: BarChart3 },
                       { id: 'projects', name: 'Projects', icon: Box },
-                      { id: 'snippets', name: 'Snippets', icon: Terminal },
+                      { id: 'snippets', name: 'Code Lab', icon: Terminal },
                       { id: 'experience', name: 'Experience', icon: Briefcase },
                       { id: 'skills', name: 'Skills', icon: Wrench },
                       { id: 'certifications', name: 'Certifications', icon: Award },
@@ -1453,7 +1862,7 @@ business impact through high-quality, testable code.
                               setEditingSkillId(null);
                               setEditingCertId(null);
                               // Reset forms
-                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', meta: { github_url: '', project_url: '', tech_stack: '', language: '' } });
+                              setNewPost({ title: '', content: '', type: adminModule === 'projects' ? 'project' : 'snippet', status: 'publish', image_url: '', sort_order: 0, meta: { github_url: '', project_url: '', tech_stack: '', language: '', challenge: '', solution: '', impact: '', architecture: '' } });
                               setNewExperience({ company: '', role: '', period: '', description: '', sort_order: 0 });
                               setNewSkill({ category: 'frontend', name: '', sort_order: 0 });
                               setNewCertification({ name: '', issuer: '', date: '', url: '', sort_order: 0 });
@@ -1564,6 +1973,54 @@ business impact through high-quality, testable code.
                             </div>
                           </div>
                         </div>
+                            {/* Content Pie Chart */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30 h-[350px]">
+                              <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
+                                <PieChartIcon className="w-4 h-4 text-emerald-500" />
+                                Content Mix
+                              </h4>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[
+                                      { name: 'Projects', value: projects.length },
+                                      { name: 'Code Lab', value: snippets.length },
+                                      { name: 'Experience', value: experience.length },
+                                    ]}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    <Cell fill="#10b981" />
+                                    <Cell fill="#3b82f6" />
+                                    <Cell fill="#8b5cf6" />
+                                  </Pie>
+                                  <Tooltip
+                                    contentStyle={{
+                                      backgroundColor: theme === 'dark' ? '#151516' : '#ffffff',
+                                      border: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+                                      borderRadius: '12px',
+                                      color: theme === 'dark' ? '#f4f4f5' : '#09090b'
+                                    }}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
+                              <div className="flex justify-center gap-4 mt-4">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" /> Projects
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Code Lab
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
+                                  <div className="w-2 h-2 rounded-full bg-purple-500" /> Exp
+                                </div>
+                              </div>
+                            </div>
+                          </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {/* Recent Messages */}
@@ -1612,134 +2069,330 @@ business impact through high-quality, testable code.
                             </div>
                           </div>
 
-                          {/* AI Insights */}
-                          <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
-                            <div className="flex items-center justify-between mb-6">
-                              <h4 className="text-sm font-bold flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-emerald-500" />
-                                Gemini AI Insights
-                              </h4>
-                              <button 
-                                onClick={generateGeminiReport}
-                                disabled={isGeneratingReport}
-                                className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 disabled:opacity-50"
-                              >
-                                {isGeneratingReport ? 'Analyzing...' : 'Refresh Report'}
-                              </button>
-                            </div>
-                            <div className="prose prose-invert prose-sm max-w-none h-[180px] overflow-y-auto scrollbar-hide">
-                              {geminiReport ? (
-                                <div className="text-zinc-400 leading-relaxed">
-                                  <Markdown>
-                                    {geminiReport}
-                                  </Markdown>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-zinc-600">
-                                  <Sparkles className="w-8 h-8 mb-2 opacity-20" />
-                                  <p className="text-xs italic">Click refresh to generate an AI analysis of your portfolio.</p>
-                                </div>
-                              )}
+                            {/* AI Insights */}
+                            <div className="bg-zinc-800/30 p-6 rounded-2xl border border-zinc-700/30">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-sm font-bold flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4 text-emerald-500" />
+                                  Gemini AI Insights
+                                </h4>
+                                <button
+                                  onClick={generateGeminiReport}
+                                  disabled={isGeneratingReport}
+                                  className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400 disabled:opacity-50"
+                                >
+                                  {isGeneratingReport ? 'Analyzing...' : 'Refresh Report'}
+                                </button>
+                              </div>
+                              <div className="prose prose-invert prose-sm max-w-none h-[180px] overflow-y-auto scrollbar-hide">
+                                {geminiReport ? (
+                                  <div className="text-zinc-400 leading-relaxed">
+                                    <Markdown>
+                                      {geminiReport}
+                                    </Markdown>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center h-full text-zinc-600">
+                                    <Sparkles className="w-8 h-8 mb-2 opacity-20" />
+                                    <p className="text-xs italic">Click refresh to generate an AI analysis of your portfolio.</p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Projects & Snippets Module */}
-                    {(adminModule === 'projects' || adminModule === 'snippets') && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingId ? 'Edit Item' : 'Create New'}
-                          </h3>
-                          <form onSubmit={handleCreatePost} className="space-y-4">
-                            <input 
-                              required
-                              type="text"
-                              value={newPost.title}
-                              onChange={(e) => setNewPost({...newPost, title: e.target.value})}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
-                              placeholder="Title"
-                            />
-                            <textarea 
-                              rows={3}
-                              value={newPost.content}
-                              onChange={(e) => setNewPost({...newPost, content: e.target.value})}
-                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
-                              placeholder="Description"
-                            />
-                            <div className="relative group/upload">
-                              <input 
-                                type="text"
-                                value={newPost.image_url}
-                                onChange={(e) => setNewPost({...newPost, image_url: e.target.value})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-12"
-                                placeholder="Image URL (or upload below)"
-                              />
-                              <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
-                                <input 
-                                  type="file" 
-                                  className="hidden" 
-                                  accept="image/*"
-                                  onChange={handleFileUpload}
-                                  disabled={isUploading}
+                      {/* Settings Module */}
+                      {adminModule === 'settings' && (
+                        <div className="space-y-8 max-w-2xl">
+                          <form onSubmit={handleUpdateSettings} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Site Title</label>
+                                <input
+                                  type="text"
+                                  value={settings.site_title}
+                                  onChange={(e) => setSettings({ ...settings, site_title: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
                                 />
-                                {isUploading ? (
-                                  <Activity className="w-4 h-4 animate-spin" />
-                                ) : (
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Profile Image</label>
+                                <div className="relative group/upload">
+                                  <input
+                                    type="text"
+                                    value={settings.profile_image}
+                                    onChange={(e) => setSettings({ ...settings, profile_image: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-10"
+                                  />
+                                  <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/*"
+                                      onChange={(e) => handleSettingFileUpload('profile_image', e)}
+                                    />
+                                    <Upload className="w-4 h-4" />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Hero Title</label>
+                              <input
+                                type="text"
+                                value={settings.hero_title}
+                                onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Hero Subtitle</label>
+                              <textarea
+                                rows={3}
+                                value={settings.hero_subtitle}
+                                onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Contact Email</label>
+                              <input
+                                type="email"
+                                value={settings.contact_email || ''}
+                                onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="your.email@example.com"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Resume / CV File (PDF)</label>
+                              <div className="relative group/upload">
+                                <input
+                                  type="text"
+                                  value={settings.resume_url}
+                                  onChange={(e) => setSettings({ ...settings, resume_url: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-10"
+                                  placeholder="/resume.pdf"
+                                />
+                                <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="application/pdf"
+                                    onChange={(e) => handleSettingFileUpload('resume_url', e)}
+                                  />
                                   <Upload className="w-4 h-4" />
-                                )}
-                              </label>
+                                </label>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <select 
-                                value={newPost.status}
-                                onChange={(e) => setNewPost({...newPost, status: e.target.value as any})}
-                                className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                              >
-                                <option value="publish">Public</option>
-                                <option value="private">Private</option>
-                              </select>
-                              <input 
-                                type="text"
-                                value={newPost.meta.tech_stack}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, tech_stack: e.target.value}})}
-                                className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="Tech Stack"
-                              />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <input 
-                                type="text"
-                                value={newPost.meta.project_url}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, project_url: e.target.value}})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="Project Live URL (Domain)"
-                              />
-                              <input 
-                                type="text"
-                                value={newPost.meta.github_url}
-                                onChange={(e) => setNewPost({...newPost, meta: {...newPost.meta, github_url: e.target.value}})}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
-                                placeholder="GitHub URL"
-                              />
-                            </div>
-                            <button 
+
+                            <button
                               type="submit"
                               disabled={isSubmitting}
-                              className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                              className="bg-emerald-500 text-black font-bold px-8 py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center gap-2"
                             >
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingId ? 'Update' : 'Publish'}
+                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
+                              Save All Settings
                             </button>
                           </form>
                         </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Existing Items</h3>
-                            <div className="relative">
-                              <input 
+                      )}
+
+                      {/* Projects & Code Lab Module */}
+                      {(adminModule === 'projects' || adminModule === 'snippets') && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingId ? 'Edit Item' : 'Create New'}
+                            </h3>
+                            <form onSubmit={handleCreatePost} className="space-y-4">
+                              <input
+                                required
+                                type="text"
+                                value={newPost.title}
+                                onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="Title"
+                              />
+                              <textarea
+                                rows={3}
+                                value={newPost.content}
+                                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                                placeholder="Description"
+                              />
+                              <div className="relative group/upload">
+                                <input
+                                  type="text"
+                                  value={newPost.image_url}
+                                  onChange={(e) => setNewPost({ ...newPost, image_url: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none pr-12"
+                                  placeholder="Image URL (or upload below)"
+                                />
+                                <label className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-zinc-700 hover:bg-emerald-500 hover:text-black rounded-lg cursor-pointer transition-all">
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={isUploading}
+                                  />
+                                  {isUploading ? (
+                                    <Activity className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Upload className="w-4 h-4" />
+                                  )}
+                                </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <select
+                                  value={newPost.status}
+                                  onChange={(e) => setNewPost({ ...newPost, status: e.target.value as any })}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                >
+                                  <option value="publish">Public</option>
+                                  <option value="private">Private</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={newPost.meta.tech_stack}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, tech_stack: e.target.value } })}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="Tech Stack"
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input
+                                  type="text"
+                                  value={newPost.meta.project_url}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, project_url: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="Project Live URL (Domain)"
+                                />
+                                <input
+                                  type="text"
+                                  value={newPost.meta.github_url}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, github_url: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder="GitHub URL"
+                                />
+                              </div>
+                              <div className="space-y-4">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Deep Dive Details</label>
+                                <textarea
+                                  value={newPost.meta.challenge || ''}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, challenge: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Challenge - What problem did you solve?"
+                                />
+                                <textarea
+                                  value={newPost.meta.solution || ''}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, solution: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Solution - How did you solve it?"
+                                />
+                                <textarea
+                                  value={newPost.meta.impact || ''}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, impact: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Impact - What was the business impact?"
+                                />
+                                <textarea
+                                  value={newPost.meta.architecture || ''}
+                                  onChange={(e) => setNewPost({ ...newPost, meta: { ...newPost.meta, architecture: e.target.value } })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none h-20"
+                                  placeholder="Architecture - Technical approach used"
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                              >
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingId ? 'Update' : 'Publish'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Existing Items</h3>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Search..."
+                                  value={searchTerm}
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {(adminModule === 'projects' ? projects : snippets)
+                                .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(post => (
+                                  <div key={post.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="truncate flex-1 mr-4">
+                                      <h4 className="text-sm font-bold truncate">{post.title}</h4>
+                                      <p className="text-[10px] text-zinc-500">{post.status}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={() => handleMovePost(post.id, 'up')}
+                                        disabled={post.sort_order === 0}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move up"
+                                      >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleMovePost(post.id, 'down')}
+                                        disabled={post.sort_order === projects.length - 1}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move down"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Experience Module */}
+                      {adminModule === 'experience' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingExpId ? 'Edit Experience' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateExperience} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newExperience.company} onChange={(e) => setNewExperience({ ...newExperience, company: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Company" />
+                                <input required type="text" value={newExperience.role} onChange={(e) => setNewExperience({ ...newExperience, role: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Role" />
+                              </div>
+                              <input required type="text" value={newExperience.period} onChange={(e) => setNewExperience({ ...newExperience, period: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Period" />
+                              <textarea required rows={3} value={newExperience.description} onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Description" />
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingExpId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingExpId ? 'Update' : 'Add Experience'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Experience List</h3>
+                              <input
                                 type="text"
                                 placeholder="Search..."
                                 value={searchTerm}
@@ -1747,185 +2400,149 @@ business impact through high-quality, testable code.
                                 className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
                               />
                             </div>
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {(adminModule === 'projects' ? projects : snippets)
-                              .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(post => (
-                              <div key={post.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="truncate flex-1 mr-4">
-                                  <h4 className="text-sm font-bold truncate">{post.title}</h4>
-                                  <p className="text-[10px] text-zinc-500">{post.status}</p>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => startEditing(post)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Experience Module */}
-                    {adminModule === 'experience' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingExpId ? 'Edit Experience' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateExperience} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newExperience.company} onChange={(e) => setNewExperience({...newExperience, company: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Company" />
-                              <input required type="text" value={newExperience.role} onChange={(e) => setNewExperience({...newExperience, role: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Role" />
-                            </div>
-                            <input required type="text" value={newExperience.period} onChange={(e) => setNewExperience({...newExperience, period: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Period" />
-                            <textarea required rows={3} value={newExperience.description} onChange={(e) => setNewExperience({...newExperience, description: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Description" />
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingExpId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingExpId ? 'Update' : 'Add Experience'}
-                            </button>
-                          </form>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Experience List</h3>
-                            <input 
-                              type="text"
-                              placeholder="Search..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
-                            />
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {experience
-                              .filter(exp => exp.role.toLowerCase().includes(searchTerm.toLowerCase()) || exp.company.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(exp => (
-                              <div key={exp.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="truncate flex-1 mr-4">
-                                  <h4 className="text-sm font-bold truncate">{exp.role} @ {exp.company}</h4>
-                                  <p className="text-[10px] text-zinc-500">{exp.period}</p>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingExpId(exp.id); setNewExperience(exp); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteExperience(exp.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Skills Module */}
-                    {adminModule === 'skills' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingSkillId ? 'Edit Skill' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateSkill} className="space-y-4">
-                            <select value={newSkill.category} onChange={(e) => setNewSkill({...newSkill, category: e.target.value as any})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none">
-                              <option value="frontend">Frontend</option>
-                              <option value="backend">Backend</option>
-                              <option value="devops">DevOps</option>
-                              <option value="additional">Additional</option>
-                            </select>
-                            <input required type="text" value={newSkill.name} onChange={(e) => setNewSkill({...newSkill, name: e.target.value})} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Skill Name" />
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingSkillId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingSkillId ? 'Update' : 'Add Skill'}
-                            </button>
-                          </form>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Skills List</h3>
-                            <input 
-                              type="text"
-                              placeholder="Search..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
-                            />
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {skills
-                              .filter(skill => skill.name.toLowerCase().includes(searchTerm.toLowerCase()) || skill.category.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(skill => (
-                              <div key={skill.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="flex items-center gap-3 flex-1 mr-4">
-                                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 uppercase">{skill.category}</span>
-                                  <h4 className="text-sm font-bold truncate">{skill.name}</h4>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingSkillId(skill.id); setNewSkill(skill); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteSkill(skill.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Certifications Module */}
-                    {adminModule === 'certifications' && (
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                            {editingCertId ? 'Edit Certification' : 'Add New'}
-                          </h3>
-                          <form onSubmit={handleCreateCertification} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newCertification.name} onChange={(e) => setNewCertification({...newCertification, name: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert Name" />
-                              <input required type="text" value={newCertification.issuer} onChange={(e) => setNewCertification({...newCertification, issuer: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Issuer" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <input required type="text" value={newCertification.date} onChange={(e) => setNewCertification({...newCertification, date: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Date (e.g. 2024)" />
-                              <input type="text" value={newCertification.url || ''} onChange={(e) => setNewCertification({...newCertification, url: e.target.value})} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert URL (optional)" />
-                            </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
-                              {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingCertId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
-                              {editingCertId ? 'Update' : 'Add Certification'}
-                            </button>
-                          </form>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Certifications List</h3>
-                            <input 
-                              type="text"
-                              placeholder="Search..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
-                            />
-                          </div>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                            {certifications
-                              .filter(cert => cert.name.toLowerCase().includes(searchTerm.toLowerCase()) || cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(cert => (
-                              <div key={cert.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
-                                <div className="flex items-center gap-3 flex-1 mr-4">
-                                  <Award className="w-4 h-4 text-emerald-500" />
-                                  <div className="truncate">
-                                    <h4 className="text-sm font-bold truncate">{cert.name}</h4>
-                                    <p className="text-[10px] text-zinc-500">{cert.issuer} • {cert.date}</p>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {experience
+                                .filter(exp => exp.role.toLowerCase().includes(searchTerm.toLowerCase()) || exp.company.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(exp => (
+                                  <div key={exp.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="truncate flex-1 mr-4">
+                                      <h4 className="text-sm font-bold truncate">{exp.role} @ {exp.company}</h4>
+                                      <p className="text-[10px] text-zinc-500">{exp.period}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={() => handleMoveExperience(exp.id, 'up')}
+                                        disabled={exp.sort_order === 0}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move up"
+                                      >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleMoveExperience(exp.id, 'down')}
+                                        disabled={exp.sort_order === experience.length - 1}
+                                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Move down"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => { setEditingExpId(exp.id); setNewExperience(exp); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteExperience(exp.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => { setEditingCertId(cert.id); setNewCertification(cert); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteCertification(cert.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
-                              </div>
-                            ))}
+                                ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Skills Module */}
+                      {adminModule === 'skills' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingSkillId ? 'Edit Skill' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateSkill} className="space-y-4">
+                              <select value={newSkill.category} onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value as any })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none">
+                                <option value="frontend">Frontend</option>
+                                <option value="backend">Backend</option>
+                                <option value="devops">DevOps</option>
+                                <option value="additional">Additional</option>
+                              </select>
+                              <input required type="text" value={newSkill.name} onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Skill Name" />
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingSkillId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingSkillId ? 'Update' : 'Add Skill'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Skills List</h3>
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                              />
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {skills
+                                .filter(skill => skill.name.toLowerCase().includes(searchTerm.toLowerCase()) || skill.category.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(skill => (
+                                  <div key={skill.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="flex items-center gap-3 flex-1 mr-4">
+                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 uppercase">{skill.category}</span>
+                                      <h4 className="text-sm font-bold truncate">{skill.name}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingSkillId(skill.id); setNewSkill(skill); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteSkill(skill.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Certifications Module */}
+                      {adminModule === 'certifications' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                              {editingCertId ? 'Edit Certification' : 'Add New'}
+                            </h3>
+                            <form onSubmit={handleCreateCertification} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newCertification.name} onChange={(e) => setNewCertification({ ...newCertification, name: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert Name" />
+                                <input required type="text" value={newCertification.issuer} onChange={(e) => setNewCertification({ ...newCertification, issuer: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Issuer" />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <input required type="text" value={newCertification.date} onChange={(e) => setNewCertification({ ...newCertification, date: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Date (e.g. 2024)" />
+                                <input type="text" value={newCertification.url || ''} onChange={(e) => setNewCertification({ ...newCertification, url: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Cert URL (optional)" />
+                              </div>
+                              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
+                                {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingCertId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                                {editingCertId ? 'Update' : 'Add Certification'}
+                              </button>
+                            </form>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Certifications List</h3>
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-[10px] outline-none focus:border-emerald-500 w-32 md:w-48"
+                              />
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                              {certifications
+                                .filter(cert => cert.name.toLowerCase().includes(searchTerm.toLowerCase()) || cert.issuer.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(cert => (
+                                  <div key={cert.id} className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/30 group">
+                                    <div className="flex items-center gap-3 flex-1 mr-4">
+                                      <Award className="w-4 h-4 text-emerald-500" />
+                                      <div className="truncate">
+                                        <h4 className="text-sm font-bold truncate">{cert.name}</h4>
+                                        <p className="text-[10px] text-zinc-500">{cert.issuer} • {cert.date}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingCertId(cert.id); setNewCertification(cert); }} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-400"><Edit3 className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => handleDeleteCertification(cert.id)} className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                     {/* Messages Module */}
                     {adminModule === 'messages' && (
@@ -1983,40 +2600,129 @@ business impact through high-quality, testable code.
       </main>
 
       {/* Footer Info */}
-      <footer className="border-t border-zinc-800 mt-24 py-12 bg-zinc-900/30">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div>
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <Box className="w-4 h-4 text-emerald-500" />
-              Backend Logic
-            </h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">
-              Simulated WordPress CPTs using SQLite. Demonstrates schema design, 
-              custom fields (post_meta), and RESTful endpoint architecture.
-            </p>
+      <footer className="border-t border-zinc-800 mt-24 pt-16 pb-8 bg-zinc-900/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <Terminal className="w-5 h-5 text-zinc-950" />
+                </div>
+                <span className="font-bold tracking-tight text-xl">{settings.site_title || 'Wondwosen'}</span>
+              </div>
+              <p className="text-zinc-500 text-sm leading-relaxed max-w-sm mb-6">
+                {settings.hero_subtitle || 'Full Stack Engineer focused on building scalable, high-performance web applications and robust system architectures.'}
+              </p>
+              <div className="flex items-center gap-4">
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                  <Github className="w-5 h-5" />
+                </a>
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+                <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                  <Mail className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Navigation</h4>
+              <ul className="space-y-4">
+                {['home', 'projects', 'snippets'].map((tab) => (
+                  <li key={tab}>
+                    <button
+                      onClick={() => {
+                        setActiveTab(tab as any);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors capitalize"
+                    >
+                      {tab}
+                    </button>
+                  </li>
+                ))}
+                <li>
+                  <button
+                    onClick={() => setShowLogin(true)}
+                    className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors"
+                  >
+                    Admin Portal
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Technical Expertise</h4>
+              <div className="space-y-6">
+                <div className="flex gap-3">
+                  <Box className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+                  <div>
+                    <p className="text-xs font-bold text-zinc-300 mb-1">Full Stack Development</p>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">End-to-end scalable solutions with modern frameworks</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Cpu className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+                  <div>
+                    <p className="text-xs font-bold text-zinc-300 mb-1">Architecture Design</p>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">Designing robust, maintainable, and high-performance systems</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Layout className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+                  <div>
+                    <p className="text-xs font-bold text-zinc-300 mb-1">UI/UX Engineering</p>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">Creating fluid, accessible, and high-performance user interfaces</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-emerald-500" />
-              API Strategy
-            </h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">
-              Decoupled architecture using Express.js. Middleware handles 
-              request logging and data normalization before serving to the client.
+
+          <div className="pt-8 border-t border-zinc-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[10px] text-zinc-600 font-mono">
+              &copy; {new Date().getFullYear()} {settings.hero_title?.split('.')[0] || 'Wondwosen Endale'}. All rights reserved.
             </p>
-          </div>
-          <div>
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <Layout className="w-4 h-4 text-emerald-500" />
-              Frontend Tech
-            </h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">
-              React 19 with Motion for fluid transitions. Tailwind CSS 4 
-              for a high-density, professional developer aesthetic.
-            </p>
+            <div className="flex items-center gap-6">
+              <p className="text-[10px] text-zinc-600 flex items-center gap-2">
+                <Activity className="w-3 h-3 text-emerald-500" />
+                System Status: <span className="text-emerald-500">Operational</span>
+              </p>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="text-[10px] text-zinc-500 hover:text-emerald-500 transition-colors flex items-center gap-1"
+              >
+                Back to Top <ChevronRight className="w-3 h-3 -rotate-90" />
+              </button>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* AI Interview Assistant */}
+      <AIChatAssistant
+        portfolioData={{
+          projects,
+          experience,
+          skills,
+          certifications,
+          settings
+        }}
+      />
+      {/* Project Deep Dive Modal */}
+      <ProjectDeepDive
+        project={selectedProject}
+        isOpen={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+      />
+      {/* Snippet Deep Dive Modal */}
+      <SnippetDeepDive
+        snippet={selectedSnippet}
+        isOpen={!!selectedSnippet}
+        onClose={() => setSelectedSnippet(null)}
+      />
     </div>
   );
 }
