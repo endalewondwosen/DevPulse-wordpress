@@ -63,6 +63,8 @@ import { AIChatAssistant } from './components/AIChatAssistant';
 import { ProjectDeepDive } from './components/ProjectDeepDive';
 import { SnippetDeepDive } from './components/SnippetDeepDive';
 import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/ProjectSkeleton';
+import { ResumeDrawer } from './components/ResumeDrawer';
+import { RecruiterConsole } from './components/RecruiterConsole';
 
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
@@ -85,6 +87,8 @@ export default function App() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
+  const [isResumeDrawerOpen, setIsResumeDrawerOpen] = useState(false);
+  const [isRecruiterConsoleOpen, setIsRecruiterConsoleOpen] = useState(false);
   const [settings, setSettings] = useState<Record<string, string>>({
     profile_image: '/profile.png',
     resume_url: '/resume.pdf',
@@ -1297,106 +1301,112 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-24"
             >
-              {/* Hero Section */}
-              <section id="about" className="py-12 md:py-20">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                  <div className="max-w-2xl order-2 lg:order-1">
+              {/* Elevated Asymmetrical Hero Section */}
+              <section id="about" className="py-12 md:py-24 relative">
+                {/* Modern Ambient Glow */}
+                <div className="absolute -top-20 -left-20 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
+                <div className="absolute top-40 right-10 w-[250px] h-[250px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                  {/* Left Column: Core Brand & Presentation */}
+                  <div className="lg:col-span-7 flex flex-col items-start text-left order-2 lg:order-1">
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-widest uppercase mb-6"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-wider uppercase mb-8"
                     >
-                      <Activity className="w-3 h-3" />
-                      Available for Architecture & Development
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      Available for Architecture &amp; Development
                     </motion.div>
-                    <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-8 leading-[0.9]">
-                      Wondwosen <span className="text-emerald-500">Endale.</span>
-                    </h1>
-                    <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed mb-10">
-                    Full Stack Developer with 3 years of experience... seeking a role where I can apply my skills in building
-scalable AI-enhanced applications. Collaborative team player focused on delivering measurable
-business impact through high-quality, testable code.
-                    </p>
-                    
-                    {/* CV Viewer Section */}
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 mb-8">
-                      <h3 className="text-xl font-bold mb-4 text-emerald-500 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        My CV / Resume
-                      </h3>
-                      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                        <iframe
-                          src="/resume.pdf"
-                          className="w-full h-[600px] border-0"
-                          title="My CV PDF"
-                        />
-                        <div className="p-4 bg-zinc-50">
-                          <p className="text-sm text-zinc-600 mb-4">
-                            Download my full CV to learn more about my experience and qualifications.
-                          </p>
-                          <a 
-                            href={apiUrl('/api/resume/download')}
-                            download
-                            className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-400 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download CV
-                          </a>
-                        </div>
+
+                    <motion.h1 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 text-zinc-100 leading-[1.05]"
+                    >
+                      Wondwosen <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-500">Endale.</span>
+                    </motion.h1>
+
+                    <motion.p 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-zinc-400 text-lg md:text-xl leading-relaxed mb-8 max-w-xl"
+                    >
+                      A professional **Full-Stack Engineer** with 3+ years of expertise architecting high-performance digital solutions using the **MERN Stack, Next.js, and Laravel**. I build scalable, testable, and secure systems configured with optimized cloud database management (PostgreSQL, MongoDB).
+                    </motion.p>
+
+                    {/* Modern Stats Grid */}
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="grid grid-cols-3 gap-6 mb-10 w-full border-y border-zinc-800 py-6"
+                    >
+                      <div>
+                        <span className="block text-3xl font-extrabold text-emerald-500">3+</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Years Experience</span>
                       </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-4">
+                      <div>
+                        <span className="block text-3xl font-extrabold text-zinc-100">15+</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Production Builds</span>
+                      </div>
+                      <div>
+                        <span className="block text-3xl font-extrabold text-zinc-100">100%</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Clean Architecture</span>
+                      </div>
+                    </motion.div>
+
+                    {/* Hero Interactive CTAs */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex flex-wrap gap-4"
+                    >
                       <button 
                         onClick={() => setActiveTab('projects')}
-                        className="bg-emerald-500 text-black font-bold px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                        className="bg-emerald-500 text-black font-bold px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center gap-2 group cursor-pointer"
                       >
-                        View Case Studies
-                        <ChevronRight className="w-4 h-4" />
+                        Explore Case Studies
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                       </button>
-                      <a 
-                        href={apiUrl('/api/resume/download')}
-                        download
-                        className="bg-zinc-800 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-700 transition-all border border-zinc-700 flex items-center gap-2"
+                      <button 
+                        onClick={() => setIsResumeDrawerOpen(true)}
+                        className="bg-zinc-900 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-800 transition-all hover:scale-[1.02] active:scale-[0.98] border border-zinc-800 flex items-center gap-2 cursor-pointer"
                       >
-                        Download Resume
-                      </a>
-                    </div>
+                        <FileText className="w-4 h-4 text-emerald-500" />
+                        View Resume
+                      </button>
+                    </motion.div>
                   </div>
 
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="order-1 lg:order-2 relative"
-                  >
-                    <div className="relative z-10 w-full aspect-square max-w-[450px] mx-auto">
-                      {/* Decorative elements */}
-                      <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full opacity-50 animate-pulse" />
-                      <div className="absolute -top-6 -right-6 w-24 h-24 bg-zinc-900 border border-zinc-800 rounded-3xl flex items-center justify-center shadow-2xl z-20 hidden md:flex">
-                        <div className="text-center">
-                          <span className="block text-2xl font-bold text-emerald-500">3+</span>
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Years Exp.</span>
-                        </div>
-                      </div>
-                      
-                      {/* Main Image Container */}
-                      <div className="w-full h-full rounded-[3rem] overflow-hidden border-2 border-zinc-800 bg-zinc-900 relative group">
+                  {/* Right Column: Premium Photo Box & Tech Ring */}
+                  <div className="lg:col-span-5 order-1 lg:order-2 flex justify-center relative">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="relative w-full max-w-[380px] aspect-[4/5]"
+                    >
+                      {/* Animated ambient backdrop */}
+                      <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 blur-2xl rounded-[3rem] animate-pulse" />
+
+                      {/* Frame container */}
+                      <div className="w-full h-full bg-zinc-900 rounded-[2.5rem] border-2 border-zinc-800/80 overflow-hidden relative shadow-2xl group">
                         {loading ? (
-                          // Skeleton loader for profile image
                           <div className="w-full h-full bg-zinc-800 animate-pulse flex items-center justify-center">
                             <div className="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
-                              <User className="w-8 h-8 text-zinc-600" />
+                              <User className="w-8 h-8 text-zinc-600 animate-pulse" />
                             </div>
                           </div>
                         ) : (
                           <img
                             src={settings.profile_image || "/profile.png"}
                             alt={settings.site_title || "Wondwosen Endale"}
-                            className="w-full h-full object-cover transition-all duration-700 scale-110 group-hover:scale-100"
-                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover transition-all duration-700 scale-105 group-hover:scale-100"
                             onError={(e) => {
-                              // Show a generic silhouette instead of a random person
                               (e.target as HTMLImageElement).style.display = 'none';
                               const parent = (e.target as HTMLImageElement).parentElement;
                               if (parent) {
@@ -1413,20 +1423,21 @@ business impact through high-quality, testable code.
                             }}
                           />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-
-                      {/* Floating Tech Badges */}
-                      <div className="absolute -bottom-4 -left-4 bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-2xl shadow-2xl z-20 flex items-center gap-3">
-                        <div className="flex -space-x-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900">TS</div>
-                          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-black">R</div>
-                          <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold border border-zinc-900 text-white dark:text-white">N</div>
+                        {/* Elegant overlay gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-85" />
+                        
+                        {/* Card Meta Content */}
+                        <div className="absolute bottom-6 left-6 right-6">
+                          <h4 className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Stack Focus</h4>
+                          <div className="flex gap-2 mt-2">
+                            <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">MERN</span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">NEXT.JS</span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded">LARAVEL</span>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stack</span>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  </div>
                 </div>
               </section>
 
@@ -1468,17 +1479,40 @@ business impact through high-quality, testable code.
                   {experience.length === 0 ? (
                     <p className="text-zinc-500 italic">Experience history will appear here once added in admin.</p>
                   ) : (
-                    experience.map((exp) => (
-                      <div key={exp.id} className="relative pl-8 border-l border-zinc-800 group">
-                        <div className="absolute left-[-5px] top-2 w-2.5 h-2.5 rounded-full bg-zinc-700 group-hover:bg-emerald-500 transition-colors" />
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                          <h4 className="text-xl font-bold text-zinc-100">{exp.role}</h4>
-                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{exp.period}</span>
+                    experience.map((exp) => {
+                      // Dynamically extract and display tech tags for recruiter impact
+                      const descAndRole = (exp.description + ' ' + exp.role + ' ' + exp.company).toLowerCase();
+                      const techs = ['React', 'Next.js', 'Laravel', 'Node.js', 'PHP', 'MongoDB', 'MySQL', 'PostgreSQL', 'Docker', 'CI/CD', 'AWS', 'Express', 'Redux', 'TypeScript', 'Tailwind', 'Redux'];
+                      const matchedTechs = Array.from(new Set(techs.filter(t => descAndRole.includes(t.toLowerCase()))));
+
+                      return (
+                        <div key={exp.id} className="relative pl-10 pb-8 border-l-2 border-zinc-800/80 last:pb-0 group">
+                          {/* Pulsing timeline dot */}
+                          <div className="absolute left-[-6px] top-1.5 w-3 h-3 rounded-full bg-zinc-800 border-2 border-zinc-950 group-hover:bg-emerald-500 group-hover:border-emerald-500/30 transition-all duration-300 scale-100 group-hover:scale-125" />
+                          
+                          {/* Glassmorphic Job Card */}
+                          <div className="p-6 bg-zinc-900/30 border border-zinc-800/60 rounded-3xl hover:border-emerald-500/25 transition-all duration-300 hover:bg-zinc-900/50 shadow-sm hover:shadow-emerald-500/5">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                              <h4 className="text-xl font-extrabold text-zinc-100 group-hover:text-emerald-400 transition-colors">{exp.role}</h4>
+                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">{exp.period}</span>
+                            </div>
+                            <p className="text-emerald-500 font-semibold text-sm mb-4">{exp.company}</p>
+                            <p className="text-zinc-400 text-sm leading-relaxed mb-4 max-w-3xl whitespace-pre-line">{exp.description}</p>
+                            
+                            {/* Dynamic Tech Pills */}
+                            {matchedTechs.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-2">
+                                {matchedTechs.map((tech) => (
+                                  <span key={tech} className="text-[9px] font-bold px-2 py-0.5 bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-md">
+                                    {tech}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-emerald-500 font-medium text-sm mb-2">{exp.company}</p>
-                        <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">{exp.description}</p>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </section>
@@ -2692,6 +2726,41 @@ business impact through high-quality, testable code.
         isOpen={!!selectedSnippet}
         onClose={() => setSelectedSnippet(null)}
       />
+
+      {/* Interactive Resume Drawer */}
+      <ResumeDrawer
+        isOpen={isResumeDrawerOpen}
+        onClose={() => setIsResumeDrawerOpen(false)}
+        resumeUrl={settings.resume_url || '/resume.pdf'}
+        downloadUrl={apiUrl('/api/resume/download')}
+      />
+
+      {/* Recruiter Console Modal */}
+      <RecruiterConsole
+        isOpen={isRecruiterConsoleOpen}
+        onClose={() => setIsRecruiterConsoleOpen(false)}
+        onOpenResume={() => {
+          setIsResumeDrawerOpen(true);
+        }}
+        downloadUrl={apiUrl('/api/resume/download')}
+        contactEmail={settings.contact_email || 'endalewondwosen@gmail.com'}
+      />
+
+      {/* Floating Recruiter FAB */}
+      <div className="fixed bottom-6 left-6 z-[100]">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsRecruiterConsoleOpen(true)}
+          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold px-5 py-3.5 rounded-full shadow-2xl transition-all cursor-pointer border border-emerald-400/30 group"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-950 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-zinc-950"></span>
+          </span>
+          <span className="text-xs uppercase tracking-wider">Recruiter Mode</span>
+        </motion.button>
+      </div>
     </div>
   );
 }
