@@ -121,9 +121,15 @@ export function RecruiterConsole({ isOpen, onClose, onOpenResume, downloadUrl, c
                       </p>
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-100">Q: Are you open to technical interviews and coding tasks?</h5>
+                      <h5 className="text-sm font-bold text-zinc-100">Q: Are you open to technical assessments and project tasks?</h5>
                       <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                        A: Yes! I write highly structured, clean, and testable code. I welcome live coding sessions, system design assessments, and architectural challenges.
+                        A: Yes! I write highly structured, clean, and testable code. I welcome take-home project assignments, system design evaluations, and architectural challenges, always delivering high-quality solutions within schedule.
+                      </p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-zinc-100">Q: How do you achieve high development velocity?</h5>
+                      <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                        A: I actively leverage AI-augmented engineering workflows (Copilot, advanced LLMs) for rapid system prototyping, complex query brainstorming, and accelerating initial boilerplate setups. This boosts my development output by up to 2.5x, allowing me to focus my core energy on critical system architecture, security guidelines, and thorough human-led reviews.
                       </p>
                     </div>
                   </div>
