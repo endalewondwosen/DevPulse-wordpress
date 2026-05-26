@@ -66,7 +66,7 @@ export function RecruiterConsole({ isOpen, onClose, onOpenResume, downloadUrl, c
               {/* Console Body */}
               <div className="p-8 overflow-y-auto space-y-8">
                 {/* At-a-glance Info Pill Bar */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center gap-3">
                     <Clock className="w-5 h-5 text-emerald-500 shrink-0" />
                     <div>
