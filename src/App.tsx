@@ -1131,7 +1131,7 @@ export default function App() {
                 <div className="h-px bg-zinc-800 my-2" />
                 {token ? (
                   <>
-                    {/* <button
+                    <button
                       onClick={() => {
                         setActiveTab('admin');
                         setIsMenuOpen(false);
@@ -1140,8 +1140,8 @@ export default function App() {
                     >
                       <Activity className="w-5 h-5" />
                       Dashboard
-                    </button> */}
-                    {/* <button 
+                    </button> 
+                    <button 
                       onClick={() => {
                         handleLogout();
                         setIsMenuOpen(false);
@@ -1150,7 +1150,7 @@ export default function App() {
                     >
                       <LogOut className="w-5 h-5" />
                       Logout
-                    </button> */}
+                    </button>
                   </>
                 ) : null}
                 {/* Mobile login hidden
@@ -1166,7 +1166,7 @@ export default function App() {
                     Login
                   </button>
                 )}
-                */}
+               
               </div>
             </motion.div>
           )}
@@ -1832,7 +1832,7 @@ export default function App() {
                   <p className="text-zinc-400 mb-8 max-w-sm">
                     This area is restricted to authorized developers. Please authenticate to manage your portfolio and view analytics.
                   </p>
-                  {/* Login as Admin hidden
+                  Login as Admin hidden
                   <button
                     onClick={() => setShowLogin(true)}
                     className="bg-emerald-500 text-black font-bold px-10 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
@@ -1840,7 +1840,7 @@ export default function App() {
                     <User className="w-5 h-5" />
                     Login as Admin
                   </button>
-                  */}
+                 
                 </div>
               ) : (
                 <div className="flex flex-col lg:flex-row gap-8">
