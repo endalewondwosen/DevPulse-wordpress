@@ -435,6 +435,14 @@ async function startServer() {
       // Allow Vercel previews like https://<branch>-<project>.vercel.app
       if (origin.endsWith(".vercel.app")) return callback(null, true);
 
+      // Allow localhost / 127.0.0.1 (any port) in non-production for local dev
+      if (
+        process.env.NODE_ENV !== "production" &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
       return callback(new Error("CORS: origin not allowed"), false);
     },
     credentials: true,

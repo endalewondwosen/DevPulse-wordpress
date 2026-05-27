@@ -50,10 +50,10 @@ export function RecruiterConsole({ isOpen, onClose, onOpenResume, downloadUrl, c
               <div className="relative p-8 border-b border-zinc-800 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 flex justify-between items-start">
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-                    <Sparkles className="w-3 h-3" /> Recruiter Cheat Sheet
+                    <Sparkles className="w-3 h-3" /> Recruiter Quick-View
                   </div>
                   <h3 className="text-2xl font-extrabold text-zinc-100 mt-2">Wondwosen Endale</h3>
-                  <p className="text-zinc-400 text-sm font-medium">Full Stack Engineer &amp; Systems Architect</p>
+                  <p className="text-zinc-400 text-sm font-medium">Senior Full Stack Engineer</p>
                 </div>
                 <button
                   onClick={onClose}
@@ -186,7 +186,7 @@ export function RecruiterConsole({ isOpen, onClose, onOpenResume, downloadUrl, c
                         <span className="text-[10px] font-bold">LinkedIn</span>
                       </a>
                       <a
-                        href="https://github.com"
+                        href="https://github.com/wondwosenendale"
                         target="_blank"
                         rel="noreferrer"
                         className="flex flex-col items-center justify-center p-3 bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 rounded-2xl text-zinc-400 hover:text-emerald-400 transition-all text-center cursor-pointer"

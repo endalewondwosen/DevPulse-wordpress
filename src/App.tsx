@@ -79,6 +79,15 @@ const apiFetch: typeof fetch = (input: any, init?: any) => {
   return fetch(input, init);
 };
 
+// Personal/contact constants — update these in one place.
+const GITHUB_URL = 'https://github.com/wondwosenendale';
+const GITHUB_HANDLE = 'github.com/wondwosenendale';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/wondwosen-endale-498a86280';
+const LINKEDIN_HANDLE = 'linkedin.com/in/wondwosen-endale';
+const PHONE_NUMBER = '+251955143592';
+const PHONE_DISPLAY = '+251 955 143 592';
+const CONTACT_EMAIL = 'endalewondwosen@gmail.com';
+
 export default function App() {
   const [projects, setProjects] = useState<Post[]>([]);
   const [snippets, setSnippets] = useState<Post[]>([]);
@@ -234,7 +243,7 @@ export default function App() {
     const timeoutId = setTimeout(() => {
       if (retryCount === 0) {
         setIsWakingUp(true);
-        setLoadingMessage('Database is waking up (Neon free tier)...');
+        setLoadingMessage('Almost there — preparing your experience...');
         setShowSlowConnectionWarning(true);
       }
     }, 3000); // Show warning after 3 seconds
@@ -1046,10 +1055,10 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="GitHub">
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="GitHub">
                 <Github className="w-4 h-4" />
               </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="LinkedIn">
+              <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="LinkedIn">
                 <Linkedin className="w-4 h-4" />
               </a>
               {/* <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800" title="Email">
@@ -1313,10 +1322,14 @@ export default function App() {
                     <motion.div 
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-wider uppercase mb-8"
+                      className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-wider uppercase mb-8"
                     >
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                      Available for Architecture &amp; Development
+                      Open to Senior Full-Stack roles
+                      <span className="text-emerald-500/40">·</span>
+                      <span className="text-emerald-400/90">Remote / Hybrid</span>
+                      <span className="text-emerald-500/40">·</span>
+                      <span className="text-emerald-400/90">Immediate</span>
                     </motion.div>
 
                     <motion.h1 
@@ -1328,16 +1341,25 @@ export default function App() {
                       Wondwosen <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-500">Endale.</span>
                     </motion.h1>
 
+                    <motion.p
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="text-zinc-300 text-xl md:text-2xl font-semibold leading-snug mb-5 max-w-xl"
+                    >
+                      I build government-scale platforms in production — serving cities, processing payments, and digitizing public services.
+                    </motion.p>
+
                     <motion.p 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-zinc-400 text-lg md:text-xl leading-relaxed mb-8 max-w-xl"
+                      className="text-zinc-400 text-base md:text-lg leading-relaxed mb-8 max-w-xl"
                     >
-                      A professional **Full-Stack Engineer** with 3+ years of expertise architecting high-performance digital solutions using the **MERN Stack, Next.js, and Laravel**. I build scalable, testable, and secure systems configured with optimized cloud database management (PostgreSQL, MongoDB).
+                      Full-Stack Engineer with 3+ years shipping production systems on the <span className="text-zinc-200 font-semibold">MERN stack, Next.js, and Laravel</span>, with PostgreSQL, MySQL, and MongoDB. Currently building public-sector platforms used daily across 6+ cities.
                     </motion.p>
 
-                    {/* Modern Stats Grid */}
+                    {/* Real Impact Stats — sourced from production deployments */}
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -1345,16 +1367,16 @@ export default function App() {
                       className="grid grid-cols-3 gap-6 mb-10 w-full border-y border-zinc-800 py-6"
                     >
                       <div>
-                        <span className="block text-3xl font-extrabold text-emerald-500">3+</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Years Experience</span>
+                        <span className="block text-3xl md:text-4xl font-extrabold text-emerald-500">500M+</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ETB Revenue Processed</span>
                       </div>
                       <div>
-                        <span className="block text-3xl font-extrabold text-zinc-100">15+</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Production Builds</span>
+                        <span className="block text-3xl md:text-4xl font-extrabold text-zinc-100">4K+</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Users Served</span>
                       </div>
                       <div>
-                        <span className="block text-3xl font-extrabold text-zinc-100">100%</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Clean Architecture</span>
+                        <span className="block text-3xl md:text-4xl font-extrabold text-zinc-100">6+</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Cities Deployed</span>
                       </div>
                     </motion.div>
 
@@ -1438,6 +1460,159 @@ export default function App() {
                       </div>
                     </motion.div>
                   </div>
+                </div>
+              </section>
+
+              {/* Built For — quiet client/org strip */}
+              <section aria-label="Built for" className="border-y border-zinc-800/80 py-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em]">
+                    Built for
+                  </span>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                    {[
+                      'Shaggar City Administration',
+                      'Oromia Regional Government',
+                      'One Stop Service Centers',
+                      'Soft Valley',
+                    ].map((org) => (
+                      <span
+                        key={org}
+                        className="text-sm font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+                      >
+                        {org}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Featured Work — outcome-led case study cards */}
+              <section aria-label="Featured Work" className="space-y-8">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
+                      Selected Work
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
+                      Production systems, real outcomes.
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('projects')}
+                    className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 hover:text-emerald-400 transition-colors group cursor-pointer"
+                  >
+                    See all projects
+                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    {
+                      eyebrow: 'e-Government',
+                      title: 'Government Service Portal',
+                      summary:
+                        'Citizen platform digitizing public services across Shaggar City — RBAC, Fayda National ID, QR-verified certificates, and multi-language support.',
+                      stack: ['Laravel', 'Next.js', 'MySQL', 'TypeScript'],
+                      metrics: [
+                        { value: '4K+', label: 'Users' },
+                        { value: '140+', label: 'Services' },
+                        { value: '97%', label: 'Satisfaction' },
+                      ],
+                      accent: 'emerald',
+                    },
+                    {
+                      eyebrow: 'Public Sector · Fintech',
+                      title: 'Shaggar City Traffic Management',
+                      summary:
+                        'Revenue-bearing platform for 450+ government users across 12 subcities — TeleBirr integration, automated late-fee calculation, public REST API.',
+                      stack: ['Laravel', 'Next.js', 'MySQL', 'TeleBirr'],
+                      metrics: [
+                        { value: 'ETB 500M+', label: 'Revenue' },
+                        { value: '400K+', label: 'Charges' },
+                        { value: '12', label: 'Subcities' },
+                      ],
+                      accent: 'blue',
+                    },
+                    {
+                      eyebrow: 'Queue Management',
+                      title: 'One Stop Service Center (Mesob)',
+                      summary:
+                        'Multi-city queue & service-token system with self-service kiosks, real-time TV displays, citizen feedback, and multi-language reporting.',
+                      stack: ['Laravel', 'MySQL', 'REST API'],
+                      metrics: [
+                        { value: '70K+', label: 'Tokens' },
+                        { value: '6+', label: 'Cities' },
+                        { value: '500+', label: 'Daily Citizens' },
+                      ],
+                      accent: 'purple',
+                    },
+                  ].map((proj) => {
+                    const ringByAccent: Record<string, string> = {
+                      emerald: 'hover:border-emerald-500/40 hover:shadow-emerald-500/5',
+                      blue: 'hover:border-blue-500/40 hover:shadow-blue-500/5',
+                      purple: 'hover:border-purple-500/40 hover:shadow-purple-500/5',
+                    };
+                    const eyebrowByAccent: Record<string, string> = {
+                      emerald: 'text-emerald-400',
+                      blue: 'text-blue-400',
+                      purple: 'text-purple-400',
+                    };
+                    return (
+                      <button
+                        key={proj.title}
+                        type="button"
+                        onClick={() => setActiveTab('projects')}
+                        className={`group text-left flex flex-col gap-5 p-6 md:p-7 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5 shadow-sm ${ringByAccent[proj.accent] || ''}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${eyebrowByAccent[proj.accent] || 'text-zinc-400'}`}>
+                            {proj.eyebrow}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                        <h3 className="text-lg md:text-xl font-bold text-zinc-100 leading-snug">
+                          {proj.title}
+                        </h3>
+                        <p className="text-sm text-zinc-400 leading-relaxed">
+                          {proj.summary}
+                        </p>
+                        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-zinc-800/80">
+                          {proj.metrics.map((m) => (
+                            <div key={m.label}>
+                              <span className="block text-base md:text-lg font-extrabold text-zinc-100 leading-tight">
+                                {m.value}
+                              </span>
+                              <span className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+                                {m.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {proj.stack.map((s) => (
+                            <span
+                              key={s}
+                              className="text-[10px] font-bold px-2 py-0.5 bg-zinc-800/80 text-zinc-400 border border-zinc-700/60 rounded"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="md:hidden flex justify-center">
+                  <button
+                    onClick={() => setActiveTab('projects')}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                  >
+                    See all projects
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </section>
 
@@ -1557,10 +1732,9 @@ export default function App() {
               <section id="contact" className="bg-emerald-500 rounded-[2rem] p-8 md:p-12 text-black relative overflow-hidden">
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div>
-                    <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Let's build something <br /> extraordinary together.</h2>
+                    <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Let's talk about <br /> your project.</h2>
                     <p className="text-black/70 text-lg mb-8 font-medium">
-                      Currently accepting new projects and architectural consulting engagements. 
-                      Reach out to discuss your vision.
+                      Open to full-time roles and senior engineering contracts. I usually reply within a day.
                     </p>
                     <div className="flex flex-col gap-6">
                       <div className="flex items-center gap-4">
@@ -1587,7 +1761,7 @@ export default function App() {
                         </div>
                         <div>
                           <p className="text-xs font-bold uppercase tracking-widest opacity-50">LinkedIn</p>
-                          <a href="https://www.linkedin.com/in/wondwosen-endale-498a86280" target="_blank" rel="noreferrer" className="font-bold hover:underline">linkedin.com/in/wondwosen</a>
+                          <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">{LINKEDIN_HANDLE}</a>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -1596,7 +1770,7 @@ export default function App() {
                         </div>
                         <div>
                           <p className="text-xs font-bold uppercase tracking-widest opacity-50">GitHub</p>
-                          <a href="https://github.com" target="_blank" rel="noreferrer" className="font-bold hover:underline">github.com/wondwosen</a>
+                          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">{GITHUB_HANDLE}</a>
                         </div>
                       </div>
                     </div>
@@ -1684,7 +1858,7 @@ export default function App() {
                     </div>
 
                     <h3 className="text-xl font-semibold text-zinc-100 mb-2">
-                      {isWakingUp ? 'Waking Up Database' : 'Loading Portfolio'}
+                      Loading projects
                     </h3>
 
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
@@ -1697,8 +1871,8 @@ export default function App() {
                         <div className="flex items-center gap-3 text-amber-400">
                           <Activity className="w-5 h-5 animate-pulse" />
                           <div className="text-left">
-                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
-                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                            <p className="font-medium text-sm">First load takes a moment</p>
+                            <p className="text-xs opacity-80">Spinning up resources. Thanks for your patience — it'll be snappy after this.</p>
                           </div>
                         </div>
                       </div>
@@ -1759,7 +1933,7 @@ export default function App() {
                     </div>
 
                     <h3 className="text-xl font-semibold text-zinc-100 mb-2">
-                      {isWakingUp ? 'Waking Up Database' : 'Loading Code Code Lab'}
+                      Loading Code Lab
                     </h3>
 
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
@@ -1772,8 +1946,8 @@ export default function App() {
                         <div className="flex items-center gap-3 text-amber-400">
                           <Activity className="w-5 h-5 animate-pulse" />
                           <div className="text-left">
-                            <p className="font-medium text-sm">Neon Free Tier Cold Start</p>
-                            <p className="text-xs opacity-80">Database is initializing. This may take 30-60 seconds on first load.</p>
+                            <p className="font-medium text-sm">First load takes a moment</p>
+                            <p className="text-xs opacity-80">Spinning up resources. Thanks for your patience — it'll be snappy after this.</p>
                           </div>
                         </div>
                       </div>
@@ -1828,9 +2002,9 @@ export default function App() {
                   <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mb-6 border border-zinc-700">
                     <Lock className="w-10 h-10 text-zinc-500" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Command Center Locked</h3>
+                  <h3 className="text-2xl font-bold mb-2">Admin Dashboard</h3>
                   <p className="text-zinc-400 mb-8 max-w-sm">
-                    This area is restricted to authorized developers. Please authenticate to manage your portfolio and view analytics.
+                    Authentication required. Sign in to manage portfolio content and view analytics.
                   </p>
                   {/* Login as Admin hidden
                   <button
@@ -2615,13 +2789,13 @@ export default function App() {
                 {settings.hero_subtitle || 'Full Stack Engineer focused on building scalable, high-performance web applications and robust system architectures.'}
               </p>
               <div className="flex items-center gap-4">
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="GitHub">
                   <Github className="w-5 h-5" />
                 </a>
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="LinkedIn">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href={`mailto:${settings.contact_email || 'endalewondwosen@gmail.com'}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all">
+                <a href={`mailto:${settings.contact_email || CONTACT_EMAIL}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="Email">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>

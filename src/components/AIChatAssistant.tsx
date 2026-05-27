@@ -39,11 +39,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
         scrollToBottom();
     }, [messages]);
 
-    const handleSend = async () => {
-        if (!input.trim() || isLoading) return;
+    const handleSend = async (customMessage?: string) => {
+        const messageToSend = customMessage || input;
+        if (!messageToSend.trim() || isLoading) return;
 
-        const userMessage = input.trim();
-        setInput('');
+        const userMessage = messageToSend.trim();
+        if (!customMessage) setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsLoading(true);
 
