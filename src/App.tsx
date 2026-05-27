@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Terminal, 
-  Code2, 
-  ExternalLink, 
-  Github, 
-  Layout, 
+import {
+  Terminal,
+  Github,
   Activity,
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   Box,
-  Cpu,
   Lock,
   User,
   LogOut,
@@ -25,23 +20,19 @@ import {
   Wrench,
   Award,
   Mail,
-  Send,
   CheckCircle2,
   MessageSquare,
   Menu,
   Linkedin,
-  Phone,
   BarChart3,
   PieChart as PieChartIcon,
   Settings,
   Sparkles,
   Inbox,
-  Layers,
   Upload,
   Download,
-  FileText,
   Sun,
-  Moon
+  Moon,
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -65,8 +56,21 @@ import { SnippetDeepDive } from './components/SnippetDeepDive';
 import { ProjectSkeleton, SnippetSkeleton, WakingUpLoader, GenericSkeleton } from './components/ProjectSkeleton';
 import { ResumeDrawer } from './components/ResumeDrawer';
 import { RecruiterConsole } from './components/RecruiterConsole';
+import { MobileCtaBar } from './components/MobileCtaBar';
+import { Hero } from './components/sections/Hero';
+import { BuiltFor } from './components/sections/BuiltFor';
+import { SelectedWork } from './components/sections/SelectedWork';
+import { Currently } from './components/sections/Currently';
+import { Skills as SkillsSection } from './components/sections/Skills';
+import { HowIWork } from './components/sections/HowIWork';
+import { Experience as ExperienceSection } from './components/sections/Experience';
+import { Certifications } from './components/sections/Certifications';
+import { Testimonial } from './components/sections/Testimonial';
+import { Contact } from './components/sections/Contact';
+import { Footer } from './components/sections/Footer';
 
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
+import { GITHUB_URL, LINKEDIN_URL } from './lib/constants';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 const apiUrl = (p: string) => {
@@ -78,15 +82,6 @@ const apiFetch: typeof fetch = (input: any, init?: any) => {
   if (typeof input === 'string') return fetch(apiUrl(input), init);
   return fetch(input, init);
 };
-
-// Personal/contact constants — update these in one place.
-const GITHUB_URL = 'https://github.com/wondwosenendale';
-const GITHUB_HANDLE = 'github.com/wondwosenendale';
-const LINKEDIN_URL = 'https://www.linkedin.com/in/wondwosen-endale-498a86280';
-const LINKEDIN_HANDLE = 'linkedin.com/in/wondwosen-endale';
-const PHONE_NUMBER = '+251955143592';
-const PHONE_DISPLAY = '+251 955 143 592';
-const CONTACT_EMAIL = 'endalewondwosen@gmail.com';
 
 export default function App() {
   const [projects, setProjects] = useState<Post[]>([]);
@@ -1310,770 +1305,36 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-24"
             >
-              {/* Elevated Asymmetrical Hero Section */}
-              <section id="about" className="py-12 md:py-24 relative">
-                {/* Modern Ambient Glow */}
-                <div className="absolute -top-20 -left-20 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute top-40 right-10 w-[250px] h-[250px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
+              <Hero
+                settings={settings}
+                loading={loading}
+                onExploreProjects={() => setActiveTab('projects')}
+                onOpenResume={() => setIsResumeDrawerOpen(true)}
+              />
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                  {/* Left Column: Core Brand & Presentation */}
-                  <div className="lg:col-span-7 flex flex-col items-start text-left order-2 lg:order-1">
-                    <motion.div 
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold tracking-wider uppercase mb-8"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                      Open to Senior Full-Stack roles
-                      <span className="text-emerald-500/40">·</span>
-                      <span className="text-emerald-400/90">Remote / Hybrid</span>
-                      <span className="text-emerald-500/40">·</span>
-                      <span className="text-emerald-400/90">Immediate</span>
-                    </motion.div>
+              <BuiltFor />
 
-                    <motion.h1 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 text-zinc-100 leading-[1.05]"
-                    >
-                      Wondwosen <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-500">Endale.</span>
-                    </motion.h1>
+              <SelectedWork onSeeAllProjects={() => setActiveTab('projects')} />
 
-                    <motion.p
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 }}
-                      className="text-zinc-100 text-xl md:text-2xl font-semibold leading-snug mb-5 max-w-xl"
-                    >
-                      I build government-scale platforms in production — serving cities, processing payments, and digitizing public services.
-                    </motion.p>
+              <Currently />
 
-                    <motion.p 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="text-zinc-400 text-base md:text-lg leading-relaxed mb-8 max-w-xl"
-                    >
-                      Full-Stack Engineer with 3+ years shipping production systems on the <span className="text-zinc-100 font-semibold">MERN stack, Next.js, and Laravel</span>, with PostgreSQL, MySQL, and MongoDB. Currently building public-sector platforms used daily across 6+ cities.
-                    </motion.p>
+              <SkillsSection skills={skills} />
 
-                    {/* Real Impact Stats — sourced from production deployments */}
-                    <div className="grid grid-cols-3 gap-6 mb-10 w-full border-y border-zinc-800 py-6">
-                      {[
-                        { value: '500M+', label: 'ETB Revenue Processed', accent: true },
-                        { value: '4K+', label: 'Users Served' },
-                        { value: '6+', label: 'Cities Deployed' },
-                      ].map((s, i) => (
-                        <motion.div
-                          key={s.label}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 + i * 0.1, duration: 0.5, ease: 'easeOut' }}
-                        >
-                          <span className={`block text-3xl md:text-4xl font-extrabold ${s.accent ? 'text-emerald-500' : 'text-zinc-100'}`}>
-                            {s.value}
-                          </span>
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                            {s.label}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
+              <HowIWork />
 
-                    {/* Hero Interactive CTAs */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="flex flex-wrap gap-4"
-                    >
-                      <button 
-                        onClick={() => setActiveTab('projects')}
-                        className="bg-emerald-500 text-black font-bold px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center gap-2 group cursor-pointer"
-                      >
-                        Explore Case Studies
-                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </button>
-                      <button 
-                        onClick={() => setIsResumeDrawerOpen(true)}
-                        className="bg-zinc-900 text-zinc-100 font-bold px-8 py-4 rounded-2xl hover:bg-zinc-800 transition-all hover:scale-[1.02] active:scale-[0.98] border border-zinc-800 flex items-center gap-2 cursor-pointer"
-                      >
-                        <FileText className="w-4 h-4 text-emerald-500" />
-                        View Resume
-                      </button>
-                    </motion.div>
-                  </div>
+              <ExperienceSection experience={experience} />
 
-                  {/* Right Column: Premium Photo Box & Tech Ring */}
-                  <div className="lg:col-span-5 order-1 lg:order-2 flex justify-center relative">
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="relative w-full max-w-[380px] aspect-[4/5]"
-                    >
-                      {/* Animated ambient backdrop */}
-                      <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 blur-2xl rounded-[3rem] animate-pulse" />
+              <Certifications certifications={certifications} />
 
-                      {/* Frame container */}
-                      <div className="w-full h-full bg-zinc-900 rounded-[2.5rem] border-2 border-zinc-800/80 overflow-hidden relative shadow-2xl group">
-                        {loading ? (
-                          <div className="w-full h-full bg-zinc-800 animate-pulse flex items-center justify-center">
-                            <div className="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
-                              <User className="w-8 h-8 text-zinc-600 animate-pulse" />
-                            </div>
-                          </div>
-                        ) : (
-                          <img
-                            src={settings.profile_image || "/profile.png"}
-                            alt={settings.site_title || "Wondwosen Endale"}
-                            className="w-full h-full object-cover transition-all duration-700 scale-105 group-hover:scale-100"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              const parent = (e.target as HTMLImageElement).parentElement;
-                              if (parent) {
-                                parent.innerHTML = `
-                                  <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <div class="w-16 h-16 bg-zinc-700 rounded-full flex items-center justify-center">
-                                      <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                      </svg>
-                                    </div>
-                                  </div>
-                                `;
-                              }
-                            }}
-                          />
-                        )}
-                        {/* Elegant overlay gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-85" />
-                        
-                        {/* Card Meta Content */}
-                        <div className="absolute bottom-6 left-6 right-6">
-                          <h4 className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Stack Focus</h4>
-                          <div className="flex gap-2 mt-2">
-                            <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">MERN</span>
-                            <span className="text-[9px] font-bold px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">NEXT.JS</span>
-                            <span className="text-[9px] font-bold px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded">LARAVEL</span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-              </section>
+              <Testimonial contactEmail={settings.contact_email} />
 
-              {/* Built For — quiet client/org strip */}
-              <section aria-label="Built for" className="border-y border-zinc-800/80 py-8">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em]">
-                    Built for
-                  </span>
-                  <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-                    {[
-                      'Shaggar City Administration',
-                      'Oromia Regional Government',
-                      'One Stop Service Centers',
-                      'Soft Valley',
-                    ].map((org) => (
-                      <span
-                        key={org}
-                        className="text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
-                      >
-                        {org}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              {/* Featured Work — outcome-led case study cards */}
-              <section aria-label="Featured Work" className="space-y-8">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
-                      Selected Work
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
-                      Production systems, real outcomes.
-                    </h2>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('projects')}
-                    className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 hover:text-emerald-400 transition-colors group cursor-pointer"
-                  >
-                    See all projects
-                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {[
-                    {
-                      eyebrow: 'e-Government',
-                      title: 'Government Service Portal',
-                      summary:
-                        'Citizen platform digitizing public services across Shaggar City — RBAC, Fayda National ID, QR-verified certificates, and multi-language support.',
-                      stack: ['Laravel', 'Next.js', 'MySQL', 'TypeScript'],
-                      metrics: [
-                        { value: '4K+', label: 'Users' },
-                        { value: '140+', label: 'Services' },
-                        { value: '97%', label: 'Satisfaction' },
-                      ],
-                      accent: 'emerald',
-                    },
-                    {
-                      eyebrow: 'Public Sector · Fintech',
-                      title: 'Shaggar City Traffic Management',
-                      summary:
-                        'Revenue-bearing platform for 450+ government users across 12 subcities — TeleBirr integration, automated late-fee calculation, public REST API.',
-                      stack: ['Laravel', 'Next.js', 'MySQL', 'TeleBirr'],
-                      metrics: [
-                        { value: 'ETB 500M+', label: 'Revenue' },
-                        { value: '400K+', label: 'Charges' },
-                        { value: '12', label: 'Subcities' },
-                      ],
-                      accent: 'blue',
-                    },
-                    {
-                      eyebrow: 'Queue Management',
-                      title: 'One Stop Service Center (Mesob)',
-                      summary:
-                        'Multi-city queue & service-token system with self-service kiosks, real-time TV displays, citizen feedback, and multi-language reporting.',
-                      stack: ['Laravel', 'MySQL', 'REST API'],
-                      metrics: [
-                        { value: '70K+', label: 'Tokens' },
-                        { value: '6+', label: 'Cities' },
-                        { value: '500+', label: 'Daily Citizens' },
-                      ],
-                      accent: 'purple',
-                    },
-                  ].map((proj) => {
-                    const ringByAccent: Record<string, string> = {
-                      emerald: 'hover:border-emerald-500/40 hover:shadow-emerald-500/5',
-                      blue: 'hover:border-blue-500/40 hover:shadow-blue-500/5',
-                      purple: 'hover:border-purple-500/40 hover:shadow-purple-500/5',
-                    };
-                    const eyebrowByAccent: Record<string, string> = {
-                      emerald: 'text-emerald-400',
-                      blue: 'text-blue-400',
-                      purple: 'text-purple-400',
-                    };
-                    return (
-                      <button
-                        key={proj.title}
-                        type="button"
-                        onClick={() => setActiveTab('projects')}
-                        className={`group text-left flex flex-col gap-5 p-6 md:p-7 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5 shadow-sm ${ringByAccent[proj.accent] || ''}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${eyebrowByAccent[proj.accent] || 'text-zinc-400'}`}>
-                            {proj.eyebrow}
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-all" />
-                        </div>
-                        <h3 className="text-lg md:text-xl font-bold text-zinc-100 leading-snug">
-                          {proj.title}
-                        </h3>
-                        <p className="text-sm text-zinc-400 leading-relaxed">
-                          {proj.summary}
-                        </p>
-                        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-zinc-800/80">
-                          {proj.metrics.map((m, mi) => (
-                            <motion.div
-                              key={m.label}
-                              initial={{ opacity: 0, y: 8 }}
-                              whileInView={{ opacity: 1, y: 0 }}
-                              viewport={{ once: true, margin: '-40px' }}
-                              transition={{ delay: mi * 0.08, duration: 0.4, ease: 'easeOut' }}
-                            >
-                              <span className="block text-base md:text-lg font-extrabold text-zinc-100 leading-tight">
-                                {m.value}
-                              </span>
-                              <span className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
-                                {m.label}
-                              </span>
-                            </motion.div>
-                          ))}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {proj.stack.map((s) => (
-                            <span
-                              key={s}
-                              className="text-[10px] font-bold px-2 py-0.5 bg-zinc-800/80 text-zinc-400 border border-zinc-700/60 rounded"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="md:hidden flex justify-center">
-                  <button
-                    onClick={() => setActiveTab('projects')}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
-                  >
-                    See all projects
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </section>
-
-              {/* Currently — active engineer signal */}
-              <section aria-label="Currently" className="relative">
-                <div className="relative p-6 md:p-8 bg-gradient-to-br from-zinc-900/60 via-zinc-900/30 to-transparent border border-zinc-800/80 rounded-3xl overflow-hidden">
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
-                  <div className="relative grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 md:gap-10 items-start">
-                    <div className="flex items-center gap-3 md:flex-col md:items-start">
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-[0.2em] uppercase">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Now
-                      </span>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] md:mt-1">
-                        May 2026
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <div>
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
-                          Building
-                        </h4>
-                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
-                          Recruiter-friendly portfolio with interactive case studies and ATS-ready resume drawer.
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
-                          Exploring
-                        </h4>
-                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
-                          AI-augmented engineering workflows, edge runtimes, and Prisma + Postgres on serverless.
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
-                          Open to
-                        </h4>
-                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
-                          Senior Full-Stack roles, remote or hybrid. Available immediately.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Skills Matrix — concrete proof per category */}
-              <section id="skills" className="space-y-8">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
-                      Tech Stack
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
-                      Tools I reach for, with proof.
-                    </h2>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[
-                    {
-                      id: 'frontend',
-                      title: 'Frontend Engineering',
-                      icon: <Layout className="w-6 h-6 text-emerald-500" />,
-                      iconBg: 'bg-emerald-500/10',
-                      proof: 'React + Next.js + TypeScript across 4+ production apps. Multi-language UI (EN / Amharic / Afaan Oromo), real-time chat (Pusher), QR-verified workflows.',
-                      fallback: ['React.js', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Bootstrap'],
-                    },
-                    {
-                      id: 'backend',
-                      title: 'Backend & Systems',
-                      icon: <Cpu className="w-6 h-6 text-blue-500" />,
-                      iconBg: 'bg-blue-500/10',
-                      proof: 'Laravel + Node.js APIs serving 4K+ users and 12 subcities. RBAC, RESTful integrations (Fayda National ID, TeleBirr payments), automated late-fee logic.',
-                      fallback: ['Node.js', 'Express.js', 'Nest.js', 'Laravel', 'REST APIs'],
-                    },
-                    {
-                      id: 'devops',
-                      title: 'Databases & DevOps',
-                      icon: <Terminal className="w-6 h-6 text-purple-500" />,
-                      iconBg: 'bg-purple-500/10',
-                      proof: 'PostgreSQL, MySQL, MongoDB in production with Prisma ORM. Docker-based deploys, Git workflows, Jest test suites, and Vite build pipelines.',
-                      fallback: ['PostgreSQL', 'MySQL', 'MongoDB', 'Prisma ORM', 'Docker', 'Jest', 'Vite'],
-                    },
-                    {
-                      id: 'additional',
-                      title: 'State & Practice',
-                      icon: <Sparkles className="w-6 h-6 text-amber-500" />,
-                      iconBg: 'bg-amber-500/10',
-                      proof: 'Redux Toolkit / Zustand / React Context for predictable state. AI-augmented workflow (Copilot + LLMs) for faster prototyping while keeping human-reviewed architecture.',
-                      fallback: ['Redux Toolkit', 'Zustand', 'React Context', 'AI-augmented workflow'],
-                    },
-                  ].map((cat) => {
-                    const dbSkills = skills.filter((s) => s.category === cat.id);
-                    const chips = dbSkills.length > 0 ? dbSkills.map((s) => s.name) : cat.fallback;
-                    return (
-                      <div
-                        key={cat.id}
-                        className="p-7 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl flex flex-col gap-5 transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5"
-                      >
-                        <div className={`w-12 h-12 ${cat.iconBg} rounded-2xl flex items-center justify-center`}>
-                          {cat.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-zinc-100 mb-2">{cat.title}</h3>
-                          <p className="text-zinc-400 text-sm leading-relaxed">
-                            {cat.proof}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-zinc-800/60">
-                          {chips.map((name) => (
-                            <span
-                              key={name}
-                              className="text-[10px] font-bold px-2 py-1 bg-zinc-800/80 rounded-md text-zinc-400 border border-zinc-700/60"
-                            >
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* How I work — process / methodology bento */}
-              <section aria-label="How I work" className="space-y-8">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
-                      Process
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
-                      How I work.
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                  {[
-                    {
-                      step: '01',
-                      icon: <Layers className="w-5 h-5 text-emerald-500" />,
-                      title: 'Discover & Architect',
-                      desc: 'Map the real problem, constraints, and success metric. Sketch the smallest system that solves it cleanly — schemas, boundaries, and trade-offs first.',
-                    },
-                    {
-                      step: '02',
-                      icon: <Code2 className="w-5 h-5 text-blue-500" />,
-                      title: 'Build in thin slices',
-                      desc: 'Ship end-to-end vertical slices behind feature flags. Typed APIs, testable components, and clear data contracts at every layer.',
-                    },
-                    {
-                      step: '03',
-                      icon: <Send className="w-5 h-5 text-purple-500" />,
-                      title: 'Ship to production',
-                      desc: 'Continuous delivery with Docker, structured logs, and graceful error boundaries. Real users on real data within days, not quarters.',
-                    },
-                    {
-                      step: '04',
-                      icon: <Activity className="w-5 h-5 text-amber-500" />,
-                      title: 'Operate & improve',
-                      desc: 'Measure what matters, instrument the slow paths, and harden the rough edges. Refactor with confidence backed by tests and metrics.',
-                    },
-                  ].map((stage) => (
-                    <div
-                      key={stage.step}
-                      className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl flex flex-col gap-4 transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center">
-                          {stage.icon}
-                        </div>
-                        <span className="text-[10px] font-bold text-zinc-600 tracking-[0.2em]">
-                          {stage.step}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-bold text-zinc-100">{stage.title}</h3>
-                      <p className="text-sm text-zinc-400 leading-relaxed">{stage.desc}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Working principles row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-                  {[
-                    {
-                      title: 'AI-augmented, human-reviewed',
-                      desc: 'Copilot and LLMs accelerate prototyping and boilerplate. Architecture, security, and reviews stay deliberate and human.',
-                    },
-                    {
-                      title: 'Clear, async-friendly communication',
-                      desc: 'Concise written updates, structured PRs, and decision records. I work well across time zones and remote teams.',
-                    },
-                    {
-                      title: 'Outcome-first, not output-first',
-                      desc: 'I optimize for the metric that moves the business — revenue, adoption, latency — not lines of code shipped.',
-                    },
-                  ].map((p) => (
-                    <div
-                      key={p.title}
-                      className="p-5 bg-zinc-900/30 border border-zinc-800/60 rounded-2xl"
-                    >
-                      <h4 className="text-sm font-bold text-zinc-100 mb-1.5">{p.title}</h4>
-                      <p className="text-xs text-zinc-500 leading-relaxed">{p.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Experience Timeline */}
-              <section id="experience" className="space-y-12">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-3xl font-bold tracking-tight">Professional Journey</h2>
-                  <div className="h-px flex-1 bg-zinc-800" />
-                </div>
-                <div className="space-y-8">
-                  {experience.length === 0 ? (
-                    <p className="text-zinc-500 italic">Experience history will appear here once added in admin.</p>
-                  ) : (
-                    experience.map((exp) => {
-                      // Dynamically extract and display tech tags for recruiter impact
-                      const descAndRole = (exp.description + ' ' + exp.role + ' ' + exp.company).toLowerCase();
-                      const techs = ['React', 'Next.js', 'Laravel', 'Node.js', 'PHP', 'MongoDB', 'MySQL', 'PostgreSQL', 'Docker', 'CI/CD', 'AWS', 'Express', 'Redux', 'TypeScript', 'Tailwind', 'Redux'];
-                      const matchedTechs = Array.from(new Set(techs.filter(t => descAndRole.includes(t.toLowerCase()))));
-
-                      return (
-                        <div key={exp.id} className="relative pl-10 pb-8 border-l-2 border-zinc-800/80 last:pb-0 group">
-                          {/* Pulsing timeline dot */}
-                          <div className="absolute left-[-6px] top-1.5 w-3 h-3 rounded-full bg-zinc-800 border-2 border-zinc-950 group-hover:bg-emerald-500 group-hover:border-emerald-500/30 transition-all duration-300 scale-100 group-hover:scale-125" />
-                          
-                          {/* Glassmorphic Job Card */}
-                          <div className="p-6 bg-zinc-900/30 border border-zinc-800/60 rounded-3xl hover:border-emerald-500/25 transition-all duration-300 hover:bg-zinc-900/50 shadow-sm hover:shadow-emerald-500/5">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                              <h4 className="text-xl font-extrabold text-zinc-100 group-hover:text-emerald-400 transition-colors">{exp.role}</h4>
-                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">{exp.period}</span>
-                            </div>
-                            <p className="text-emerald-500 font-semibold text-sm mb-4">{exp.company}</p>
-                            <p className="text-zinc-400 text-sm leading-relaxed mb-4 max-w-3xl whitespace-pre-line">{exp.description}</p>
-                            
-                            {/* Dynamic Tech Pills */}
-                            {matchedTechs.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 pt-2">
-                                {matchedTechs.map((tech) => (
-                                  <span key={tech} className="text-[9px] font-bold px-2 py-0.5 bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-md">
-                                    {tech}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-
-              {/* Certifications & Expertise */}
-              <section id="certifications" className="space-y-12">
-                <div className="flex items-center gap-6">
-                  <h2 className="text-3xl font-bold tracking-tight">Certifications & Expertise</h2>
-                  <div className="h-px flex-1 bg-zinc-800" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {certifications.length === 0 ? (
-                    <p className="text-zinc-500 italic col-span-full">Certifications will appear here once added in admin.</p>
-                  ) : (
-                    certifications.map((cert) => (
-                      <div key={cert.id} className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl hover:border-emerald-500/50 transition-all group">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-black transition-all">
-                            <Award className="w-6 h-6" />
-                          </div>
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cert.date}</span>
-                        </div>
-                        <h4 className="text-lg font-bold mb-1 group-hover:text-emerald-500 transition-colors">{cert.name}</h4>
-                        <p className="text-zinc-500 text-sm mb-4">{cert.issuer}</p>
-                        {cert.url && cert.url !== '#' && (
-                          <a 
-                            href={cert.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors"
-                          >
-                            View Certificate <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              {/*
-                Testimonial — social proof from a former collaborator.
-                NOTE: The quote below is a representative placeholder modeled on
-                the CV reference (Jemal Mohammed, Project Manager, Melaverse
-                Technology). Before deploying, confirm wording with him and
-                replace if needed.
-              */}
-              <section aria-label="Testimonial" className="relative">
-                <div className="relative p-8 md:p-12 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl overflow-hidden">
-                  <div className="absolute -top-10 -left-4 text-[180px] md:text-[240px] leading-none font-serif text-emerald-500/10 select-none pointer-events-none">
-                    &ldquo;
-                  </div>
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
-
-                  <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 items-center">
-                    <div className="space-y-6">
-                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
-                        Reference
-                      </span>
-                      <blockquote className="text-lg md:text-2xl font-semibold text-zinc-100 leading-snug tracking-tight">
-                        Wondwosen consistently delivered on complex, government-scale systems — clean architecture, on-time milestones, and the kind of ownership you rarely see at three years of experience. He shipped revenue-bearing platforms across multiple cities and handled real production load with calm and clarity.
-                      </blockquote>
-                      <div className="flex items-center gap-4 pt-2">
-                        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
-                          JM
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-zinc-100">Jemal Mohammed</p>
-                          <p className="text-xs text-zinc-500">Project Manager · Melaverse Technology</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="hidden md:flex flex-col items-end gap-2 self-end">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                        References on request
-                      </span>
-                      <a
-                        href={`mailto:${settings.contact_email || CONTACT_EMAIL}?subject=Reference%20request%20for%20Wondwosen%20Endale`}
-                        className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-                      >
-                        Request contact details &rarr;
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Contact CTA */}
-              <section id="contact" className="bg-emerald-500 rounded-[2rem] p-8 md:p-12 text-black relative overflow-hidden">
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div>
-                    <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Let's talk about <br /> your project.</h2>
-                    <p className="text-black/70 text-lg mb-8 font-medium">
-                      Open to full-time roles and senior engineering contracts. I usually reply within a day.
-                    </p>
-                    <div className="flex flex-col gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                          <Mail className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest opacity-50">Email Me</p>
-                          <a href="mailto:endalewondwosen@gmail.com" className="font-bold hover:underline">endalewondwosen@gmail.com</a>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                          <Phone className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest opacity-50">Call Me</p>
-                          <a href="tel:+251955143592" className="font-bold hover:underline">+251 955 143 592</a>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                          <Linkedin className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest opacity-50">LinkedIn</p>
-                          <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">{LINKEDIN_HANDLE}</a>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                          <Github className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest opacity-50">GitHub</p>
-                          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">{GITHUB_HANDLE}</a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-                    <form onSubmit={handleContactSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Name</label>
-                          <input 
-                            required
-                            type="text"
-                            value={contactForm.name}
-                            onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
-                            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
-                            placeholder="John Doe"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Email</label>
-                          <input 
-                            required
-                            type="email"
-                            value={contactForm.email}
-                            onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
-                            placeholder="john@example.com"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Subject</label>
-                        <input 
-                          type="text"
-                          value={contactForm.subject}
-                          onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
-                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
-                          placeholder="Project Inquiry"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-widest opacity-60">Message</label>
-                        <textarea 
-                          required
-                          rows={4}
-                          value={contactForm.message}
-                          onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
-                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/30 placeholder:text-black/30"
-                          placeholder="Tell me about your project..."
-                        />
-                      </div>
-                      <button 
-                        disabled={isSubmitting}
-                        type="submit"
-                        className="w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-zinc-900 transition-all flex items-center justify-center gap-2"
-                      >
-                        {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        Send Message
-                      </button>
-                    </form>
-                  </div>
-                </div>
-                <div className="absolute right-[-10%] bottom-[-20%] opacity-10">
-                  <Terminal className="w-[400px] h-[400px]" />
-                </div>
-              </section>
+              <Contact
+                contactForm={contactForm}
+                setContactForm={setContactForm}
+                onSubmit={handleContactSubmit}
+                isSubmitting={isSubmitting}
+                contactEmail={settings.contact_email}
+              />
             </motion.div>
           )}
 
@@ -3010,109 +2271,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Footer Info */}
-      <footer className="border-t border-zinc-800 mt-24 pt-16 pb-28 md:pb-8 bg-zinc-900/30">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <Terminal className="w-5 h-5 text-zinc-950" />
-                </div>
-                <span className="font-bold tracking-tight text-xl">{settings.site_title || 'Wondwosen'}</span>
-              </div>
-              <p className="text-zinc-500 text-sm leading-relaxed max-w-sm mb-6">
-                {settings.hero_subtitle || 'Full Stack Engineer focused on building scalable, high-performance web applications and robust system architectures.'}
-              </p>
-              <div className="flex items-center gap-4">
-                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="GitHub">
-                  <Github className="w-5 h-5" />
-                </a>
-                <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="LinkedIn">
-                  <Linkedin className="w-5 h-5" />
-                </a>
-                <a href={`mailto:${settings.contact_email || CONTACT_EMAIL}`} className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-emerald-500 transition-all" title="Email">
-                  <Mail className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Navigation</h4>
-              <ul className="space-y-4">
-                {['home', 'projects', 'snippets'].map((tab) => (
-                  <li key={tab}>
-                    <button
-                      onClick={() => {
-                        setActiveTab(tab as any);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors capitalize"
-                    >
-                      {tab}
-                    </button>
-                  </li>
-                ))}
-                {/* Admin Portal link hidden
-                <li>
-                  <button
-                    onClick={() => setShowLogin(true)}
-                    className="text-sm text-zinc-500 hover:text-emerald-500 transition-colors"
-                  >
-                    Admin Portal
-                  </button>
-                </li>
-                */}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">Technical Expertise</h4>
-              <div className="space-y-6">
-                <div className="flex gap-3">
-                  <Box className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
-                  <div>
-                    <p className="text-xs font-bold text-zinc-100 mb-1">Full Stack Development</p>
-                    <p className="text-[10px] text-zinc-500 leading-relaxed">End-to-end scalable solutions with modern frameworks</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <Cpu className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
-                  <div>
-                    <p className="text-xs font-bold text-zinc-100 mb-1">Architecture Design</p>
-                    <p className="text-[10px] text-zinc-500 leading-relaxed">Designing robust, maintainable, and high-performance systems</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <Layout className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
-                  <div>
-                    <p className="text-xs font-bold text-zinc-100 mb-1">UI/UX Engineering</p>
-                    <p className="text-[10px] text-zinc-500 leading-relaxed">Creating fluid, accessible, and high-performance user interfaces</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-zinc-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-[10px] text-zinc-600 font-mono">
-              &copy; {new Date().getFullYear()} {settings.hero_title?.split('.')[0] || 'Wondwosen Endale'}. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <p className="text-[10px] text-zinc-600 flex items-center gap-2">
-                <Activity className="w-3 h-3 text-emerald-500" />
-                System Status: <span className="text-emerald-500">Operational</span>
-              </p>
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="text-[10px] text-zinc-500 hover:text-emerald-500 transition-colors flex items-center gap-1"
-              >
-                Back to Top <ChevronRight className="w-3 h-3 -rotate-90" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer settings={settings} onNavigate={(tab) => setActiveTab(tab)} />
 
       {/* AI Interview Assistant */}
       <AIChatAssistant
@@ -3172,37 +2331,11 @@ export default function App() {
         </motion.button>
       </div>
 
-      {/* Mobile sticky bottom action bar */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none">
-        <div className="pointer-events-auto mx-3 mb-3 p-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-2xl shadow-2xl grid grid-cols-3 gap-2">
-          <a
-            href={`mailto:${settings.contact_email || CONTACT_EMAIL}?subject=Hello%20Wondwosen`}
-            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
-            aria-label="Email"
-          >
-            <Mail className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-bold tracking-wide">Email</span>
-          </a>
-          <button
-            type="button"
-            onClick={() => setIsResumeDrawerOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
-            aria-label="Resume"
-          >
-            <FileText className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-bold tracking-wide">Resume</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsRecruiterConsoleOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-emerald-500 active:bg-emerald-400 text-black transition-colors"
-            aria-label="Open recruiter console"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-[10px] font-extrabold tracking-wide">Hire me</span>
-          </button>
-        </div>
-      </div>
+      <MobileCtaBar
+        contactEmail={settings.contact_email}
+        onOpenResume={() => setIsResumeDrawerOpen(true)}
+        onOpenRecruiter={() => setIsRecruiterConsoleOpen(true)}
+      />
     </div>
   );
 }
