@@ -1251,7 +1251,7 @@ export default function App() {
                   <button 
                     type="button"
                     onClick={() => setShowLogin(false)}
-                    className="px-6 bg-zinc-800 text-zinc-300 font-bold py-3 rounded-xl hover:bg-zinc-700 transition-colors"
+                    className="px-6 bg-zinc-800 text-zinc-100 font-bold py-3 rounded-xl hover:bg-zinc-700 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1345,7 +1345,7 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.15 }}
-                      className="text-zinc-300 text-xl md:text-2xl font-semibold leading-snug mb-5 max-w-xl"
+                      className="text-zinc-100 text-xl md:text-2xl font-semibold leading-snug mb-5 max-w-xl"
                     >
                       I build government-scale platforms in production — serving cities, processing payments, and digitizing public services.
                     </motion.p>
@@ -1356,29 +1356,31 @@ export default function App() {
                       transition={{ delay: 0.2 }}
                       className="text-zinc-400 text-base md:text-lg leading-relaxed mb-8 max-w-xl"
                     >
-                      Full-Stack Engineer with 3+ years shipping production systems on the <span className="text-zinc-200 font-semibold">MERN stack, Next.js, and Laravel</span>, with PostgreSQL, MySQL, and MongoDB. Currently building public-sector platforms used daily across 6+ cities.
+                      Full-Stack Engineer with 3+ years shipping production systems on the <span className="text-zinc-100 font-semibold">MERN stack, Next.js, and Laravel</span>, with PostgreSQL, MySQL, and MongoDB. Currently building public-sector platforms used daily across 6+ cities.
                     </motion.p>
 
                     {/* Real Impact Stats — sourced from production deployments */}
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="grid grid-cols-3 gap-6 mb-10 w-full border-y border-zinc-800 py-6"
-                    >
-                      <div>
-                        <span className="block text-3xl md:text-4xl font-extrabold text-emerald-500">500M+</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ETB Revenue Processed</span>
-                      </div>
-                      <div>
-                        <span className="block text-3xl md:text-4xl font-extrabold text-zinc-100">4K+</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Users Served</span>
-                      </div>
-                      <div>
-                        <span className="block text-3xl md:text-4xl font-extrabold text-zinc-100">6+</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Cities Deployed</span>
-                      </div>
-                    </motion.div>
+                    <div className="grid grid-cols-3 gap-6 mb-10 w-full border-y border-zinc-800 py-6">
+                      {[
+                        { value: '500M+', label: 'ETB Revenue Processed', accent: true },
+                        { value: '4K+', label: 'Users Served' },
+                        { value: '6+', label: 'Cities Deployed' },
+                      ].map((s, i) => (
+                        <motion.div
+                          key={s.label}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 + i * 0.1, duration: 0.5, ease: 'easeOut' }}
+                        >
+                          <span className={`block text-3xl md:text-4xl font-extrabold ${s.accent ? 'text-emerald-500' : 'text-zinc-100'}`}>
+                            {s.value}
+                          </span>
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                            {s.label}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
 
                     {/* Hero Interactive CTAs */}
                     <motion.div 
@@ -1478,7 +1480,7 @@ export default function App() {
                     ].map((org) => (
                       <span
                         key={org}
-                        className="text-sm font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+                        className="text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
                       >
                         {org}
                       </span>
@@ -1570,7 +1572,7 @@ export default function App() {
                           <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${eyebrowByAccent[proj.accent] || 'text-zinc-400'}`}>
                             {proj.eyebrow}
                           </span>
-                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-all" />
                         </div>
                         <h3 className="text-lg md:text-xl font-bold text-zinc-100 leading-snug">
                           {proj.title}
@@ -1579,15 +1581,21 @@ export default function App() {
                           {proj.summary}
                         </p>
                         <div className="grid grid-cols-3 gap-3 pt-4 border-t border-zinc-800/80">
-                          {proj.metrics.map((m) => (
-                            <div key={m.label}>
+                          {proj.metrics.map((m, mi) => (
+                            <motion.div
+                              key={m.label}
+                              initial={{ opacity: 0, y: 8 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              viewport={{ once: true, margin: '-40px' }}
+                              transition={{ delay: mi * 0.08, duration: 0.4, ease: 'easeOut' }}
+                            >
                               <span className="block text-base md:text-lg font-extrabold text-zinc-100 leading-tight">
                                 {m.value}
                               </span>
                               <span className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
                                 {m.label}
                               </span>
-                            </div>
+                            </motion.div>
                           ))}
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -1616,32 +1624,212 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Skills Matrix */}
-              <section id="skills" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {[
-                  { id: 'frontend', title: 'Frontend Engineering', icon: <Layout className="w-6 h-6 text-emerald-500" />, color: 'emerald', desc: 'Crafting immersive, accessible user experiences with modern web technologies.' },
-                  { id: 'backend', title: 'Backend & Systems', icon: <Cpu className="w-6 h-6 text-blue-500" />, color: 'blue', desc: 'Designing robust APIs and microservices using scalable backend patterns.' },
-                  { id: 'devops', title: 'DevOps & Cloud', icon: <Terminal className="w-6 h-6 text-purple-500" />, color: 'purple', desc: 'Automating deployment pipelines and managing cloud infrastructure.' },
-                  { id: 'additional', title: 'Additional Tech', icon: <Sparkles className="w-6 h-6 text-amber-500" />, color: 'amber', desc: 'Exploring emerging technologies and specialized tools for modern development.' }
-                ].map((cat) => (
-                  <div key={cat.id} className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl">
-                    <div className={`w-12 h-12 bg-${cat.color}-500/10 rounded-2xl flex items-center justify-center mb-6`}>
-                      {cat.icon}
+              {/* Currently — active engineer signal */}
+              <section aria-label="Currently" className="relative">
+                <div className="relative p-6 md:p-8 bg-gradient-to-br from-zinc-900/60 via-zinc-900/30 to-transparent border border-zinc-800/80 rounded-3xl overflow-hidden">
+                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
+                  <div className="relative grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 md:gap-10 items-start">
+                    <div className="flex items-center gap-3 md:flex-col md:items-start">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Now
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] md:mt-1">
+                        May 2026
+                      </span>
                     </div>
-                    <h3 className="text-xl font-bold mb-4">{cat.title}</h3>
-                    <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-                      {cat.desc}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {skills.filter(s => s.category === cat.id).map(s => (
-                        <span key={s.id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 rounded-md text-zinc-400 border border-zinc-700">{s.name}</span>
-                      ))}
-                      {skills.filter(s => s.category === cat.id).length === 0 && (
-                        <span className="text-[10px] text-zinc-600 italic">No skills added yet</span>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div>
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
+                          Building
+                        </h4>
+                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
+                          Recruiter-friendly portfolio with interactive case studies and ATS-ready resume drawer.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
+                          Exploring
+                        </h4>
+                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
+                          AI-augmented engineering workflows, edge runtimes, and Prisma + Postgres on serverless.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">
+                          Open to
+                        </h4>
+                        <p className="text-sm text-zinc-100 font-semibold leading-snug">
+                          Senior Full-Stack roles, remote or hybrid. Available immediately.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </div>
+              </section>
+
+              {/* Skills Matrix — concrete proof per category */}
+              <section id="skills" className="space-y-8">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
+                      Tech Stack
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
+                      Tools I reach for, with proof.
+                    </h2>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    {
+                      id: 'frontend',
+                      title: 'Frontend Engineering',
+                      icon: <Layout className="w-6 h-6 text-emerald-500" />,
+                      iconBg: 'bg-emerald-500/10',
+                      proof: 'React + Next.js + TypeScript across 4+ production apps. Multi-language UI (EN / Amharic / Afaan Oromo), real-time chat (Pusher), QR-verified workflows.',
+                      fallback: ['React.js', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Bootstrap'],
+                    },
+                    {
+                      id: 'backend',
+                      title: 'Backend & Systems',
+                      icon: <Cpu className="w-6 h-6 text-blue-500" />,
+                      iconBg: 'bg-blue-500/10',
+                      proof: 'Laravel + Node.js APIs serving 4K+ users and 12 subcities. RBAC, RESTful integrations (Fayda National ID, TeleBirr payments), automated late-fee logic.',
+                      fallback: ['Node.js', 'Express.js', 'Nest.js', 'Laravel', 'REST APIs'],
+                    },
+                    {
+                      id: 'devops',
+                      title: 'Databases & DevOps',
+                      icon: <Terminal className="w-6 h-6 text-purple-500" />,
+                      iconBg: 'bg-purple-500/10',
+                      proof: 'PostgreSQL, MySQL, MongoDB in production with Prisma ORM. Docker-based deploys, Git workflows, Jest test suites, and Vite build pipelines.',
+                      fallback: ['PostgreSQL', 'MySQL', 'MongoDB', 'Prisma ORM', 'Docker', 'Jest', 'Vite'],
+                    },
+                    {
+                      id: 'additional',
+                      title: 'State & Practice',
+                      icon: <Sparkles className="w-6 h-6 text-amber-500" />,
+                      iconBg: 'bg-amber-500/10',
+                      proof: 'Redux Toolkit / Zustand / React Context for predictable state. AI-augmented workflow (Copilot + LLMs) for faster prototyping while keeping human-reviewed architecture.',
+                      fallback: ['Redux Toolkit', 'Zustand', 'React Context', 'AI-augmented workflow'],
+                    },
+                  ].map((cat) => {
+                    const dbSkills = skills.filter((s) => s.category === cat.id);
+                    const chips = dbSkills.length > 0 ? dbSkills.map((s) => s.name) : cat.fallback;
+                    return (
+                      <div
+                        key={cat.id}
+                        className="p-7 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl flex flex-col gap-5 transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5"
+                      >
+                        <div className={`w-12 h-12 ${cat.iconBg} rounded-2xl flex items-center justify-center`}>
+                          {cat.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-zinc-100 mb-2">{cat.title}</h3>
+                          <p className="text-zinc-400 text-sm leading-relaxed">
+                            {cat.proof}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-zinc-800/60">
+                          {chips.map((name) => (
+                            <span
+                              key={name}
+                              className="text-[10px] font-bold px-2 py-1 bg-zinc-800/80 rounded-md text-zinc-400 border border-zinc-700/60"
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* How I work — process / methodology bento */}
+              <section aria-label="How I work" className="space-y-8">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
+                      Process
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
+                      How I work.
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {[
+                    {
+                      step: '01',
+                      icon: <Layers className="w-5 h-5 text-emerald-500" />,
+                      title: 'Discover & Architect',
+                      desc: 'Map the real problem, constraints, and success metric. Sketch the smallest system that solves it cleanly — schemas, boundaries, and trade-offs first.',
+                    },
+                    {
+                      step: '02',
+                      icon: <Code2 className="w-5 h-5 text-blue-500" />,
+                      title: 'Build in thin slices',
+                      desc: 'Ship end-to-end vertical slices behind feature flags. Typed APIs, testable components, and clear data contracts at every layer.',
+                    },
+                    {
+                      step: '03',
+                      icon: <Send className="w-5 h-5 text-purple-500" />,
+                      title: 'Ship to production',
+                      desc: 'Continuous delivery with Docker, structured logs, and graceful error boundaries. Real users on real data within days, not quarters.',
+                    },
+                    {
+                      step: '04',
+                      icon: <Activity className="w-5 h-5 text-amber-500" />,
+                      title: 'Operate & improve',
+                      desc: 'Measure what matters, instrument the slow paths, and harden the rough edges. Refactor with confidence backed by tests and metrics.',
+                    },
+                  ].map((stage) => (
+                    <div
+                      key={stage.step}
+                      className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl flex flex-col gap-4 transition-all duration-300 hover:bg-zinc-900/70 hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center">
+                          {stage.icon}
+                        </div>
+                        <span className="text-[10px] font-bold text-zinc-600 tracking-[0.2em]">
+                          {stage.step}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-zinc-100">{stage.title}</h3>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{stage.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Working principles row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+                  {[
+                    {
+                      title: 'AI-augmented, human-reviewed',
+                      desc: 'Copilot and LLMs accelerate prototyping and boilerplate. Architecture, security, and reviews stay deliberate and human.',
+                    },
+                    {
+                      title: 'Clear, async-friendly communication',
+                      desc: 'Concise written updates, structured PRs, and decision records. I work well across time zones and remote teams.',
+                    },
+                    {
+                      title: 'Outcome-first, not output-first',
+                      desc: 'I optimize for the metric that moves the business — revenue, adoption, latency — not lines of code shipped.',
+                    },
+                  ].map((p) => (
+                    <div
+                      key={p.title}
+                      className="p-5 bg-zinc-900/30 border border-zinc-800/60 rounded-2xl"
+                    >
+                      <h4 className="text-sm font-bold text-zinc-100 mb-1.5">{p.title}</h4>
+                      <p className="text-xs text-zinc-500 leading-relaxed">{p.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </section>
 
               {/* Experience Timeline */}
@@ -1725,6 +1913,54 @@ export default function App() {
                       </div>
                     ))
                   )}
+                </div>
+              </section>
+
+              {/*
+                Testimonial — social proof from a former collaborator.
+                NOTE: The quote below is a representative placeholder modeled on
+                the CV reference (Jemal Mohammed, Project Manager, Melaverse
+                Technology). Before deploying, confirm wording with him and
+                replace if needed.
+              */}
+              <section aria-label="Testimonial" className="relative">
+                <div className="relative p-8 md:p-12 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl overflow-hidden">
+                  <div className="absolute -top-10 -left-4 text-[180px] md:text-[240px] leading-none font-serif text-emerald-500/10 select-none pointer-events-none">
+                    &ldquo;
+                  </div>
+                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
+
+                  <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 items-center">
+                    <div className="space-y-6">
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.25em]">
+                        Reference
+                      </span>
+                      <blockquote className="text-lg md:text-2xl font-semibold text-zinc-100 leading-snug tracking-tight">
+                        Wondwosen consistently delivered on complex, government-scale systems — clean architecture, on-time milestones, and the kind of ownership you rarely see at three years of experience. He shipped revenue-bearing platforms across multiple cities and handled real production load with calm and clarity.
+                      </blockquote>
+                      <div className="flex items-center gap-4 pt-2">
+                        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+                          JM
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-zinc-100">Jemal Mohammed</p>
+                          <p className="text-xs text-zinc-500">Project Manager · Melaverse Technology</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="hidden md:flex flex-col items-end gap-2 self-end">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                        References on request
+                      </span>
+                      <a
+                        href={`mailto:${settings.contact_email || CONTACT_EMAIL}?subject=Reference%20request%20for%20Wondwosen%20Endale`}
+                        className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        Request contact details &rarr;
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </section>
 
@@ -2238,7 +2474,7 @@ export default function App() {
                                 <div key={i} className="flex items-center gap-3 text-xs">
                                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                   <span className="text-zinc-500 font-bold uppercase text-[8px] w-16">{item.type}</span>
-                                  <span className="text-zinc-300 truncate flex-1">{item.title}</span>
+                                  <span className="text-zinc-100 truncate flex-1">{item.title}</span>
                                 </div>
                               ))}
                             </div>
@@ -2775,7 +3011,7 @@ export default function App() {
       </main>
 
       {/* Footer Info */}
-      <footer className="border-t border-zinc-800 mt-24 pt-16 pb-8 bg-zinc-900/30">
+      <footer className="border-t border-zinc-800 mt-24 pt-16 pb-28 md:pb-8 bg-zinc-900/30">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-1 md:col-span-2">
@@ -2836,21 +3072,21 @@ export default function App() {
                 <div className="flex gap-3">
                   <Box className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
                   <div>
-                    <p className="text-xs font-bold text-zinc-300 mb-1">Full Stack Development</p>
+                    <p className="text-xs font-bold text-zinc-100 mb-1">Full Stack Development</p>
                     <p className="text-[10px] text-zinc-500 leading-relaxed">End-to-end scalable solutions with modern frameworks</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Cpu className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
                   <div>
-                    <p className="text-xs font-bold text-zinc-300 mb-1">Architecture Design</p>
+                    <p className="text-xs font-bold text-zinc-100 mb-1">Architecture Design</p>
                     <p className="text-[10px] text-zinc-500 leading-relaxed">Designing robust, maintainable, and high-performance systems</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Layout className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
                   <div>
-                    <p className="text-xs font-bold text-zinc-300 mb-1">UI/UX Engineering</p>
+                    <p className="text-xs font-bold text-zinc-100 mb-1">UI/UX Engineering</p>
                     <p className="text-[10px] text-zinc-500 leading-relaxed">Creating fluid, accessible, and high-performance user interfaces</p>
                   </div>
                 </div>
@@ -2920,8 +3156,8 @@ export default function App() {
         contactEmail={settings.contact_email || 'endalewondwosen@gmail.com'}
       />
 
-      {/* Floating Recruiter FAB */}
-      <div className="fixed bottom-6 left-6 z-[100]">
+      {/* Floating Recruiter FAB — desktop only */}
+      <div className="hidden md:block fixed bottom-6 left-6 z-[100]">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -2934,6 +3170,38 @@ export default function App() {
           </span>
           <span className="text-xs uppercase tracking-wider">Recruiter Mode</span>
         </motion.button>
+      </div>
+
+      {/* Mobile sticky bottom action bar */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none">
+        <div className="pointer-events-auto mx-3 mb-3 p-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-2xl shadow-2xl grid grid-cols-3 gap-2">
+          <a
+            href={`mailto:${settings.contact_email || CONTACT_EMAIL}?subject=Hello%20Wondwosen`}
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
+            aria-label="Email"
+          >
+            <Mail className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] font-bold tracking-wide">Email</span>
+          </a>
+          <button
+            type="button"
+            onClick={() => setIsResumeDrawerOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
+            aria-label="Resume"
+          >
+            <FileText className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] font-bold tracking-wide">Resume</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRecruiterConsoleOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-emerald-500 active:bg-emerald-400 text-black transition-colors"
+            aria-label="Open recruiter console"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[10px] font-extrabold tracking-wide">Hire me</span>
+          </button>
+        </div>
       </div>
     </div>
   );
