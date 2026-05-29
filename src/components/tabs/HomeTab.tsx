@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import type { Certification, Experience, Skill } from '../../types';
+import type { Certification, Experience, Post, Skill } from '../../types';
 import type { ContactFormState } from '../sections/Contact';
 import { BuiltFor } from '../sections/BuiltFor';
 import { Certifications } from '../sections/Certifications';
@@ -22,7 +22,9 @@ interface HomeTabProps {
   setContactForm: (next: ContactFormState) => void;
   onSubmitContact: (e: FormEvent<HTMLFormElement>) => void;
   isSubmitting: boolean;
+  projects: Post[];
   onExploreProjects: () => void;
+  onOpenProject: (id: number) => void;
   onOpenResume: () => void;
 }
 
@@ -36,7 +38,9 @@ export function HomeTab({
   setContactForm,
   onSubmitContact,
   isSubmitting,
+  projects,
   onExploreProjects,
+  onOpenProject,
   onOpenResume,
 }: HomeTabProps) {
   return (
@@ -50,7 +54,11 @@ export function HomeTab({
 
       <BuiltFor />
 
-      <SelectedWork onSeeAllProjects={onExploreProjects} />
+      <SelectedWork
+        projects={projects}
+        onSeeAllProjects={onExploreProjects}
+        onOpenProject={onOpenProject}
+      />
 
       <Currently />
 

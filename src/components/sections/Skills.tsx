@@ -73,7 +73,7 @@ export function Skills({ skills }: SkillsProps) {
                 <h3 className="text-lg font-bold text-zinc-100 mb-2">{cat.title}</h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">{cat.proof}</p>
               </div>
-              <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-zinc-800/60">
+              <div className="flex flex-wrap gap-1.5 pt-4 border-t border-zinc-800/60">
                 {chips.map((name) => (
                   <span
                     key={name}

@@ -15,7 +15,36 @@ import cors from "cors";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const JWT_SECRET = "devpulse-secret-key-123";
+function requireProductionEnv() {
+  if (process.env.NODE_ENV !== "production") return;
+  const missing: string[] = [];
+  if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
+  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
+  if (!process.env.ADMIN_PASSWORD) missing.push("ADMIN_PASSWORD");
+  if (missing.length > 0) {
+    console.error(
+      `[env] Missing required production variables: ${missing.join(", ")}`
+    );
+    process.exit(1);
+  }
+}
+
+requireProductionEnv();
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === "production"
+    ? ""
+    : "dev-only-jwt-secret-change-in-production");
+
+const ADMIN_USERNAME =
+  process.env.ADMIN_USERNAME ||
+  (process.env.NODE_ENV === "production" ? "" : "admin");
+
+const ADMIN_PASSWORD =
+  process.env.ADMIN_PASSWORD ||
+  (process.env.NODE_ENV === "production" ? "" : "password");
+
 //
 // --- DATABASE CONFIGURATION ---
 const isPostgres = !!process.env.DATABASE_URL;
@@ -419,6 +448,11 @@ async function startServer() {
   const PUBLIC_SITE_URL =
     process.env.PUBLIC_SITE_URL || "https://wondwosenportifolio.vercel.app";
 
+  const extraCorsOrigins = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.use(cors({
     origin: (origin, callback) => {
       // Allow non-browser tools (no Origin header)
@@ -428,6 +462,7 @@ async function startServer() {
         "https://devpulse-wordpress.onrender.com",
         "https://wondwosenportifolio.vercel.app", // legacy typo domain (kept for compatibility)
         "https://wondwosenportfolio.vercel.app",
+        ...extraCorsOrigins,
       ]);
 
       if (allowList.has(origin)) return callback(null, true);
@@ -587,15 +622,71 @@ async function startServer() {
     });
   };
 
+  const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    if (!(req as any).user) {
+      return res.status(401).json({ error: "Unauthorized", code: "AUTH_REQUIRED" });
+    }
+    next();
+  };
+
   // Login Route
   app.post("/api/login", (req, res) => {
     const { username, password } = req.body;
-    // Simple mock auth
-    if (username === "admin" && password === "password") {
-      const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !JWT_SECRET) {
+      return res.status(503).json({ error: "Admin login is not configured on the server" });
+    }
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "24h" });
       return res.json({ token });
     }
     res.status(401).json({ error: "Invalid credentials" });
+  });
+
+  // Admin Gemini report (API key stays on server — never bundled in Vite)
+  app.post("/api/admin/gemini-report", authenticateToken, requireAuth, async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(503).json({
+          error: "GEMINI_API_KEY is not set on the API server (Render)",
+        });
+      }
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey });
+      const {
+        projectCount = 0,
+        snippetCount = 0,
+        messageCount = 0,
+        unreadCount = 0,
+        skills = [],
+        stats = {},
+      } = req.body ?? {};
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            parts: [
+              {
+                text: `As a portfolio analytics assistant, analyze the following data and provide a concise, professional summary report for the developer.
+Data:
+- Projects: ${projectCount}
+- Code Lab: ${snippetCount}
+- Total Messages: ${messageCount} (${unreadCount} unread)
+- Top Skills: ${Array.isArray(skills) ? skills.join(", ") : skills}
+- API Activity: ${JSON.stringify(stats)}
+
+Provide insights on portfolio engagement, content balance, and suggestions for improvement. Format the output in Markdown.`,
+              },
+            ],
+          },
+        ],
+      });
+      res.json({ report: response.text || "No report generated." });
+    } catch (error: any) {
+      console.error("Gemini report error:", error);
+      res.status(500).json({ error: error.message || "Failed to generate report" });
+    }
   });
 
   // Logging Middleware (Requested functionality)

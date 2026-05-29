@@ -2,12 +2,12 @@ import { FormEvent, ChangeEvent } from 'react';
 import Markdown from 'react-markdown';
 import {
   Activity, Award, BarChart3, Box, Briefcase, CheckCircle2, ChevronDown, ChevronUp,
-  Edit3, Eye, Inbox, Lock, LogOut, Mail, Plus, Settings, Sparkles, Terminal, Trash2,
+  Edit3, Eye, Inbox, Lock, LogOut, Mail, PieChart as PieChartIcon, Plus, Settings, Sparkles, Terminal, Trash2, User,
   Upload, Wrench,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart as RechartsPieChart, Pie, Cell,
 } from 'recharts';
 import type { Post, Experience, Skill, Message, Stat, Certification } from '../../types';
 
@@ -18,6 +18,7 @@ export interface AdminTabProps {
   token: string | null;
   setToken: (t: string | null) => void;
   setShowLogin: (v: boolean) => void;
+  showAdminLogin: boolean;
   adminModule: AdminModule;
   setAdminModule: (m: AdminModule) => void;
   theme: 'light' | 'dark';
@@ -73,7 +74,7 @@ export interface AdminTabProps {
 
 export function AdminTab(props: AdminTabProps) {
   const {
-    token, setToken, setShowLogin, adminModule, setAdminModule, theme,
+    token, setToken, setShowLogin, showAdminLogin, adminModule, setAdminModule, theme,
     projects, snippets, experience, skills, certifications, messages, stats,
     settings, setSettings, searchTerm, setSearchTerm,
     newPost, setNewPost, editingId, setEditingId,
@@ -100,15 +101,15 @@ export function AdminTab(props: AdminTabProps) {
                   <p className="text-zinc-400 mb-8 max-w-sm">
                     Authentication required. Sign in to manage portfolio content and view analytics.
                   </p>
-                  {/* Login as Admin hidden
-                  <button
-                    onClick={() => setShowLogin(true)}
-                    className="bg-emerald-500 text-black font-bold px-10 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
-                  >
-                    <User className="w-5 h-5" />
-                    Login as Admin
-                  </button>
-                  */}
+                  {showAdminLogin && (
+                    <button
+                      onClick={() => setShowLogin(true)}
+                      className="bg-emerald-500 text-black font-bold px-10 py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                    >
+                      <User className="w-5 h-5" />
+                      Login as Admin
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -249,7 +250,7 @@ export function AdminTab(props: AdminTabProps) {
                               Content Mix
                             </h4>
                             <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
+                              <RechartsPieChart>
                                 <Pie
                                   data={[
                                     { name: 'Projects', value: projects.length },
@@ -275,7 +276,7 @@ export function AdminTab(props: AdminTabProps) {
                                     color: theme === 'dark' ? '#f4f4f5' : '#09090b'
                                   }}
                                 />
-                              </PieChart>
+                              </RechartsPieChart>
                             </ResponsiveContainer>
                             <div className="flex justify-center gap-4 mt-4">
                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase">
@@ -651,7 +652,28 @@ export function AdminTab(props: AdminTabProps) {
                                 <input required type="text" value={newExperience.role} onChange={(e) => setNewExperience({ ...newExperience, role: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Role" />
                               </div>
                               <input required type="text" value={newExperience.period} onChange={(e) => setNewExperience({ ...newExperience, period: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Period" />
-                              <textarea required rows={3} value={newExperience.description} onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none" placeholder="Description" />
+                              <div className="space-y-2">
+                                <textarea
+                                  required
+                                  rows={7}
+                                  value={newExperience.description}
+                                  onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm outline-none"
+                                  placeholder={`Summary:
+One-line role scope.
+
+Achievements:
+- Outcome with metric
+- Outcome with metric
+
+Projects:
+- Project Name | Impact | One-line contribution`}
+                                />
+                                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                                  Tip: Use <span className="text-zinc-400 font-semibold">Summary / Achievements / Projects</span> headings.
+                                  Achievements and projects should start with <span className="text-zinc-400 font-semibold">-</span>.
+                                </p>
+                              </div>
                               <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
                                 {isSubmitting ? <Activity className="w-4 h-4 animate-spin" /> : (editingExpId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
                                 {editingExpId ? 'Update' : 'Add Experience'}

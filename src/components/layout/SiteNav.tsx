@@ -13,6 +13,7 @@ import {
 import { GITHUB_URL, LINKEDIN_URL } from '../../lib/constants';
 
 export type AppTab = 'home' | 'projects' | 'snippets' | 'admin';
+const SHOW_ADMIN_LOGIN = import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true';
 
 const NAV_ITEMS = [
   { name: 'About', id: 'about', type: 'scroll' as const },
@@ -122,7 +123,7 @@ export function SiteNav({
         </div>
 
         <div className="flex items-center gap-4">
-          {token && (
+          {(token || SHOW_ADMIN_LOGIN) && (
             <button
               onClick={() => {
                 onTabChange('admin');
@@ -133,7 +134,7 @@ export function SiteNav({
               }`}
             >
               <Activity className="w-5 h-5" />
-              Dashboard
+              {token ? 'Dashboard' : 'Admin'}
             </button>
           )}
 

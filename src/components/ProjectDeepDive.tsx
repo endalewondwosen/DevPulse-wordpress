@@ -44,7 +44,7 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({ project, isOpe
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-emerald-500/20 to-zinc-900" />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/30 via-transparent to-transparent" />
 
                             <button
                                 onClick={onClose}
@@ -53,20 +53,27 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({ project, isOpe
                                 <X className="w-5 h-5" />
                             </button>
 
-                            <div className="absolute bottom-6 left-8 right-8">
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {project.meta.tech_stack?.split(',').map((tech) => (
-                                        <span key={tech} className="px-3 py-1 bg-emerald-500 text-black text-[10px] font-bold rounded-full uppercase tracking-widest">
-                                            {tech.trim()}
-                                        </span>
-                                    ))}
-                                </div>
-                                <h2 className="text-3xl md:text-4xl font-black text-white">{project.title}</h2>
-                            </div>
                         </div>
 
                         {/* Scrollable Content */}
                         <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12 scrollbar-hide">
+                            {/* Project Identity */}
+                            <div className="space-y-4 pb-2 border-b border-zinc-800/80">
+                                <h2 className="text-3xl md:text-4xl font-black text-zinc-100 leading-tight">
+                                    {project.title}
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {project.meta.tech_stack?.split(',').map((tech) => (
+                                        <span
+                                            key={tech}
+                                            className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full uppercase tracking-[0.14em] border border-emerald-500/25"
+                                        >
+                                            {tech.trim()}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Quick Info Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="p-6 bg-zinc-800/30 rounded-3xl border border-zinc-700/30">
@@ -141,11 +148,11 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({ project, isOpe
                                     </h3>
                                     <div className="grid grid-cols-1 gap-4">
                                         {project.content.split('.').filter(s => s.trim().length > 0).map((sentence, idx) => (
-                                            <div key={idx} className="p-4 bg-zinc-800/50 rounded-2xl border border-zinc-700/50 flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+                                            <div key={idx} className="p-4 bg-zinc-800/60 rounded-2xl border border-zinc-700/70 flex items-center gap-4">
+                                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold text-xs">
                                                     0{idx + 1}
                                                 </div>
-                                                <p className="text-xs text-zinc-300">{sentence.trim()}.</p>
+                                                <p className="text-sm md:text-[15px] leading-relaxed text-zinc-100">{sentence.trim()}.</p>
                                             </div>
                                         ))}
                                     </div>

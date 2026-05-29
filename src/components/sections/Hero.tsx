@@ -16,7 +16,7 @@ const STATS = [
 
 export function Hero({ settings, loading, onExploreProjects, onOpenResume }: HeroProps) {
   return (
-    <section id="about" className="py-12 md:py-24 relative">
+    <section id="about" className="pt-4 pb-0 md:pt-8 relative">
       {/* Modern Ambient Glow */}
       <div className="absolute -top-20 -left-20 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
       <div className="absolute top-40 right-10 w-[250px] h-[250px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />

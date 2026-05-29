@@ -1,46 +1,47 @@
 import { motion } from 'motion/react';
 import { Terminal } from 'lucide-react';
 
+export type PageHeaderTab = 'projects' | 'snippets';
+
+const TAB_CONFIG: Record<PageHeaderTab, { title: string; placeholder: string }> = {
+  projects: { title: 'Projects', placeholder: 'Search projects…' },
+  snippets: { title: 'Code Lab', placeholder: 'Search snippets…' },
+};
+
 interface PageHeaderProps {
+  tab: PageHeaderTab;
   searchQuery: string;
   onSearchChange: (value: string) => void;
 }
 
-export function PageHeader({ searchQuery, onSearchChange }: PageHeaderProps) {
+export function PageHeader({ tab, searchQuery, onSearchChange }: PageHeaderProps) {
+  const { title, placeholder } = TAB_CONFIG[tab];
+
   return (
-    <header className="mb-16">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
-        <div className="max-w-2xl">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-bold tracking-tighter mb-4"
-          >
-            Engineering <span className="text-emerald-500">Scalable Systems</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-zinc-400 text-xl leading-relaxed"
-          >
-            A professional showcase of modern full-stack architecture. Focused on performance,
-            maintainability, and building robust digital products that drive real-world impact.
-          </motion.p>
-        </div>
+    <header className="mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.h1
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-100"
+        >
+          {title}
+        </motion.h1>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative w-full md:w-72"
+          className="relative w-full sm:w-72 shrink-0"
         >
-          <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
           <input
-            type="text"
-            placeholder="Search resources..."
+            type="search"
+            aria-label={placeholder}
+            placeholder={placeholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-11 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
           />
         </motion.div>
       </div>

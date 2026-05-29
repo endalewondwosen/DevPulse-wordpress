@@ -9,8 +9,80 @@ const TECH_KEYWORDS = [
   'PostgreSQL', 'Docker', 'CI/CD', 'AWS', 'Express', 'Redux', 'TypeScript', 'Tailwind',
 ];
 
+interface StructuredProject {
+  name: string;
+  impact?: string;
+  description: string;
+}
+
+interface StructuredExperienceContent {
+  summary?: string;
+  achievements: string[];
+  projects: StructuredProject[];
+}
+
+function parseStructuredDescription(description: string): StructuredExperienceContent | null {
+  const lines = description
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return null;
+
+  let summary = '';
+  let section: 'summary' | 'achievements' | 'projects' = 'summary';
+  const achievements: string[] = [];
+  const projects: StructuredProject[] = [];
+
+  for (const line of lines) {
+    const normalized = line.toLowerCase();
+    if (normalized === 'summary:' || normalized === 'overview:') {
+      section = 'summary';
+      continue;
+    }
+    if (normalized === 'achievements:' || normalized === 'highlights:') {
+      section = 'achievements';
+      continue;
+    }
+    if (normalized === 'projects:' || normalized === 'selected projects:') {
+      section = 'projects';
+      continue;
+    }
+
+    if (section === 'summary') {
+      summary = summary ? `${summary} ${line}` : line;
+      continue;
+    }
+
+    if (section === 'achievements' && line.startsWith('-')) {
+      achievements.push(line.replace(/^-+\s*/, '').trim());
+      continue;
+    }
+
+    if (section === 'projects' && line.startsWith('-')) {
+      // Format: - Project Name | Impact (optional) | Description
+      const parts = line.replace(/^-+\s*/, '').split('|').map((p) => p.trim()).filter(Boolean);
+      if (parts.length === 1) {
+        projects.push({ name: parts[0], description: '' });
+      } else if (parts.length === 2) {
+        projects.push({ name: parts[0], description: parts[1] });
+      } else {
+        const [name, impact, ...rest] = parts;
+        projects.push({ name, impact, description: rest.join(' | ') });
+      }
+    }
+  }
+
+  if (!summary && achievements.length === 0 && projects.length === 0) return null;
+  return { summary: summary || undefined, achievements, projects };
+}
+
 function detectTechs(exp: ExperienceType): string[] {
-  const haystack = `${exp.description} ${exp.role} ${exp.company}`.toLowerCase();
+  const structured = parseStructuredDescription(exp.description);
+  const projectText = structured?.projects.map((p) => `${p.name} ${p.description} ${p.impact || ''}`).join(' ') || '';
+  const achievementText = structured?.achievements.join(' ') || '';
+  const summaryText = structured?.summary || '';
+  const haystack = `${exp.description} ${summaryText} ${achievementText} ${projectText} ${exp.role} ${exp.company}`.toLowerCase();
   return Array.from(
     new Set(TECH_KEYWORDS.filter((t) => haystack.includes(t.toLowerCase())))
   );
@@ -29,6 +101,7 @@ export function Experience({ experience }: ExperienceProps) {
         ) : (
           experience.map((exp) => {
             const matchedTechs = detectTechs(exp);
+            const structured = parseStructuredDescription(exp.description);
             return (
               <div key={exp.id} className="relative pl-10 pb-8 border-l-2 border-zinc-800/80 last:pb-0 group">
                 {/* Pulsing timeline dot */}
@@ -44,9 +117,60 @@ export function Experience({ experience }: ExperienceProps) {
                     </span>
                   </div>
                   <p className="text-emerald-500 font-semibold text-sm mb-4">{exp.company}</p>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-4 max-w-3xl whitespace-pre-line">
-                    {exp.description}
-                  </p>
+                  {structured ? (
+                    <div className="space-y-4 mb-4 max-w-3xl">
+                      {structured.summary && (
+                        <p className="text-sm text-zinc-400 leading-relaxed">
+                          {structured.summary}
+                        </p>
+                      )}
+
+                      {structured.achievements.length > 0 && (
+                        <div>
+                          <h5 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+                            Key Achievements
+                          </h5>
+                          <ul className="space-y-1.5">
+                            {structured.achievements.map((item) => (
+                              <li key={item} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
+                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {structured.projects.length > 0 && (
+                        <div>
+                          <h5 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+                            Selected Projects
+                          </h5>
+                          <div className="space-y-2">
+                            {structured.projects.map((project) => (
+                              <div key={`${project.name}-${project.description}`} className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/70">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <span className="text-xs font-bold text-zinc-100">{project.name}</span>
+                                  {project.impact && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
+                                      {project.impact}
+                                    </span>
+                                  )}
+                                </div>
+                                {project.description && (
+                                  <p className="text-xs text-zinc-400 leading-relaxed">{project.description}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-400 text-sm leading-relaxed mb-4 max-w-3xl whitespace-pre-line">
+                      {exp.description}
+                    </p>
+                  )}
 
                   {matchedTechs.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-2">

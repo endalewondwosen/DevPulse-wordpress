@@ -2,19 +2,25 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# DevPulse Portfolio
 
-This contains everything you need to run your app locally.
+Full-stack portfolio (React + Express + PostgreSQL).
 
-View your app in AI Studio: https://ai.studio/apps/d393a9aa-b469-465d-ba33-fbc88b985575
+## Run locally
 
-## Run Locally
+**Prerequisites:** Node.js 18+
 
-**Prerequisites:**  Node.js
+1. `npm install`
+2. `cp .env.example .env` and fill in `DATABASE_URL`, `JWT_SECRET`, `ADMIN_PASSWORD`
+3. `npm run dev` → http://localhost:3000
 
+See **[docs/ENV.md](docs/ENV.md)** for Vercel + Render production variables.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Deploy
+
+| Platform | What to deploy |
+|----------|----------------|
+| **Vercel** | Frontend (`npm run build` → `dist/`) |
+| **Render** | API (`npm start`, `server.ts`) |
+
+Production checklist: [docs/ENV.md](docs/ENV.md)

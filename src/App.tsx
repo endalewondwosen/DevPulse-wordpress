@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Lock, User } from 'lucide-react';
 
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ProjectDeepDive } from './components/ProjectDeepDive';
@@ -21,6 +20,7 @@ import { Footer } from './components/sections/Footer';
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+const SHOW_ADMIN_LOGIN = import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true';
 const apiUrl = (p: string) => {
   if (!API_BASE) return p;
   const path = p.startsWith('/') ? p : `/${p}`;
@@ -804,30 +804,35 @@ export default function App() {
   };
 
   const generateGeminiReport = async () => {
+    if (!token) return;
     setIsGeneratingReport(true);
     try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{
-          parts: [{
-            text: `As a portfolio analytics assistant, analyze the following data and provide a concise, professional summary report for the developer. 
-            Data:
-            - Projects: ${projects.length}
-            - Code Lab: ${snippets.length}
-            - Total Messages: ${messages.length} (${messages.filter(m => m.status === 'unread').length} unread)
-            - Top Skills: ${skills.map(s => s.name).join(', ')}
-            - API Activity: ${JSON.stringify(stats)}
-            
-            Provide insights on portfolio engagement, content balance, and suggestions for improvement. Format the output in Markdown.`
-          }]
-        }]
+      const res = await apiFetch('/api/admin/gemini-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectCount: projects.length,
+          snippetCount: snippets.length,
+          messageCount: messages.length,
+          unreadCount: messages.filter((m) => m.status === 'unread').length,
+          skills: skills.map((s) => s.name),
+          stats,
+        }),
       });
-      setGeminiReport(response.text || 'No report generated.');
-    } catch (err) {
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to generate report');
+      }
+      setGeminiReport(data.report || 'No report generated.');
+    } catch (err: any) {
       console.error('Gemini report error:', err);
-      setGeminiReport('Failed to generate report. Please check your API key.');
+      setGeminiReport(
+        err?.message ||
+          'Failed to generate report. Set GEMINI_API_KEY on the API server (Render).'
+      );
     } finally {
       setIsGeneratingReport(false);
     }
@@ -894,8 +899,18 @@ export default function App() {
         onClose={() => setShowLogin(false)}
       />
 
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        <PageHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <main
+        className={`max-w-6xl mx-auto px-6 ${
+          activeTab === 'home' ? 'pt-4 pb-12 md:pt-6 md:pb-12' : 'py-12'
+        }`}
+      >
+        {(activeTab === 'projects' || activeTab === 'snippets') && (
+          <PageHeader
+            tab={activeTab}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+        )}
 
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
@@ -912,11 +927,13 @@ export default function App() {
                 skills={skills}
                 experience={experience}
                 certifications={certifications}
+                projects={projects}
                 contactForm={contactForm}
                 setContactForm={setContactForm}
                 onSubmitContact={handleContactSubmit}
                 isSubmitting={isSubmitting}
                 onExploreProjects={() => setActiveTab('projects')}
+                onOpenProject={handlePostClick}
                 onOpenResume={() => setIsResumeDrawerOpen(true)}
               />
             </motion.div>
@@ -970,6 +987,7 @@ export default function App() {
                 token={token}
                 setToken={setToken}
                 setShowLogin={setShowLogin}
+                showAdminLogin={SHOW_ADMIN_LOGIN}
                 adminModule={adminModule}
                 setAdminModule={setAdminModule}
                 theme={theme}
