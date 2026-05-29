@@ -1,0 +1,15 @@
+# Render Blueprint — API backend (frontend on Vercel)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: devpulse-wordpress
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set secrets in Render Dashboard (never commit real values):
+      # DATABASE_URL, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD
+      # Optional: GEMINI_API_KEY, PUBLIC_SITE_URL, CORS_ORIGINS

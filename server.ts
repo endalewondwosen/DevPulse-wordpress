@@ -15,20 +15,34 @@ import cors from "cors";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function logEnvStatus() {
+  console.log(
+    "[startup] NODE_ENV=%s PORT=%s DATABASE_URL=%s JWT_SECRET=%s ADMIN_PASSWORD=%s ADMIN_USERNAME=%s",
+    process.env.NODE_ENV ?? "(unset)",
+    process.env.PORT ?? "(unset)",
+    process.env.DATABASE_URL ? "set" : "MISSING",
+    process.env.JWT_SECRET ? "set" : "MISSING",
+    process.env.ADMIN_PASSWORD ? "set" : "MISSING",
+    process.env.ADMIN_USERNAME ?? "(default admin)"
+  );
+}
+
 function requireProductionEnv() {
   if (process.env.NODE_ENV !== "production") return;
   const missing: string[] = [];
-  if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
-  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
-  if (!process.env.ADMIN_PASSWORD) missing.push("ADMIN_PASSWORD");
+  if (!process.env.DATABASE_URL?.trim()) missing.push("DATABASE_URL");
+  if (!process.env.JWT_SECRET?.trim()) missing.push("JWT_SECRET");
+  if (!process.env.ADMIN_PASSWORD?.trim()) missing.push("ADMIN_PASSWORD");
   if (missing.length > 0) {
     console.error(
-      `[env] Missing required production variables: ${missing.join(", ")}`
+      "[env] Render deploy failed: set these in Dashboard → Environment:\n  - %s\nSee docs/ENV.md",
+      missing.join("\n  - ")
     );
     process.exit(1);
   }
 }
 
+logEnvStatus();
 requireProductionEnv();
 
 const JWT_SECRET =
@@ -133,17 +147,6 @@ async function initDb() {
     // Column likely already exists
   }
 
-  // Migration for sort_order in experience
-  try {
-    if (isPostgres) {
-      await exec(`ALTER TABLE experience ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
-    } else {
-      await exec(`ALTER TABLE experience ADD COLUMN sort_order INTEGER DEFAULT 0`);
-    }
-  } catch (e) {
-    // Column likely already exists
-  }
-
   // Migration for messages.status
   try {
     if (isPostgres) {
@@ -212,6 +215,17 @@ async function initDb() {
       value TEXT
     );
   `);
+
+  // Migration for sort_order in experience (after table exists)
+  try {
+    if (isPostgres) {
+      await exec(`ALTER TABLE experience ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`);
+    } else {
+      await exec(`ALTER TABLE experience ADD COLUMN sort_order INTEGER DEFAULT 0`);
+    }
+  } catch (e) {
+    // Column likely already exists
+  }
 
   // Seed data if empty
   const countRes = await queryOne("SELECT COUNT(*) as count FROM posts");
@@ -442,7 +456,22 @@ async function initDb() {
 }
 
 async function startServer() {
-  await initDb();
+  console.log(
+    "[startup] Database: %s",
+    isPostgres ? "PostgreSQL" : "SQLite (devpulse.db)"
+  );
+  try {
+    await initDb();
+    console.log("[startup] Database initialized");
+  } catch (err: any) {
+    console.error("[startup] Database init failed:", err?.message ?? err);
+    if (isPostgres) {
+      console.error(
+        "[startup] Check DATABASE_URL on Render (Neon connection string, sslmode=require)"
+      );
+    }
+    throw err;
+  }
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
   const PUBLIC_SITE_URL =
@@ -1195,4 +1224,7 @@ Provide insights on portfolio engagement, content balance, and suggestions for i
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("[fatal] Server failed to start:", err?.message ?? err);
+  process.exit(1);
+});

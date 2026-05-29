@@ -945,7 +945,11 @@ export default function App() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              className={
+                loading
+                  ? 'w-full'
+                  : 'grid grid-cols-1 md:grid-cols-2 gap-6'
+              }
             >
               <ProjectsTab
                 loading={loading}

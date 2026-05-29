@@ -16,8 +16,8 @@ export function TabLoadingPanel({
   skeleton,
 }: TabLoadingPanelProps) {
   return (
-    <div className="space-y-6">
-      <div className="text-center py-12">
+    <div className="w-full space-y-8">
+      <div className="flex flex-col items-center justify-center text-center py-12 md:py-16 min-h-[240px]">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-full mb-6">
           <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
         </div>
@@ -59,7 +59,7 @@ export function TabLoadingPanel({
         </div>
       </div>
 
-      {skeleton}
+      <div className="w-full max-w-4xl mx-auto">{skeleton}</div>
     </div>
   );
 }

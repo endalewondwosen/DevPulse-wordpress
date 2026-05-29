@@ -70,8 +70,26 @@ npm run dev
 
 | Symptom | Fix |
 |---------|-----|
+| **Render: build OK, start exits 1** | In Render → **Environment**, add `DATABASE_URL`, `JWT_SECRET`, `ADMIN_PASSWORD`, and `NODE_ENV=production`. Redeploy. Check **Logs** for `[env] Render deploy failed` or `[startup] Database init failed` |
 | API calls fail from Vercel | `VITE_API_URL` = Render host only (no `/api`); redeploy after env change |
 | CORS error | Add origin to `CORS_ORIGINS` on Render or use a `*.vercel.app` URL |
 | Admin login fails | Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` on Render |
 | Gemini report fails | Set `GEMINI_API_KEY` on Render (not Vercel) |
 | “Failed to fetch” locally | Run `npm run dev`; ensure `DATABASE_URL` or SQLite fallback works |
+
+### Render deploy exited with status 1
+
+1. Open the service → **Logs** → find the line starting with `[env]` or `[startup]`.
+2. Add missing variables (minimum):
+
+   ```
+   NODE_ENV=production
+   DATABASE_URL=postgresql://...   (Neon, sslmode=require)
+   JWT_SECRET=<32+ random chars>
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=<strong password>
+   PUBLIC_SITE_URL=https://wondwosenportifolio.vercel.app
+   ```
+
+3. **Save** → **Manual Deploy** → **Clear build cache & deploy** (if env was added after last deploy).
+4. Health check: `https://devpulse-wordpress.onrender.com/api/health` should return JSON.
