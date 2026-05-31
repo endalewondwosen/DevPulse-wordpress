@@ -191,7 +191,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 pr-12 text-sm outline-none focus:border-emerald-500 transition-all"
                                 />
                                 <button
-                                    onClick={handleSend}
+                                    onClick={() => handleSend()}
                                     disabled={!input.trim() || isLoading}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-all disabled:opacity-50"
                                 >
