@@ -17,10 +17,11 @@ interface AIChatAssistantProps {
         certifications: any[];
         settings: any;
     };
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData }) => {
-    const [isOpen, setIsOpen] = useState(false);
+export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData, isOpen, onOpenChange }) => {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
@@ -109,14 +110,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[100]">
+        <div className="fixed z-[101] bottom-[5.5rem] right-3 md:bottom-6 md:right-6 md:z-[100]">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="absolute bottom-20 right-0 w-[350px] md:w-[400px] h-[500px] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+                        className="absolute bottom-0 md:bottom-20 right-0 w-[min(100vw-1.5rem,350px)] md:w-[400px] h-[min(70vh,500px)] md:h-[500px] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="p-4 bg-emerald-500 flex items-center justify-between">
@@ -133,7 +134,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
                                 </div>
                             </div>
                             <button
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => onOpenChange(false)}
                                 className="p-2 hover:bg-black/10 rounded-xl transition-colors text-black"
                             >
                                 <X className="w-5 h-5" />
@@ -207,12 +208,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ portfolioData 
                 )}
             </AnimatePresence>
 
-            {/* Toggle Button */}
+            {/* Toggle Button — desktop only; mobile uses MobileCtaBar */}
             <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isOpen ? 'bg-zinc-800 text-emerald-500 rotate-90' : 'bg-emerald-500 text-black'
+                onClick={() => onOpenChange(!isOpen)}
+                className={`hidden md:flex w-14 h-14 rounded-full items-center justify-center shadow-2xl transition-all ${isOpen ? 'bg-zinc-800 text-emerald-500 rotate-90' : 'bg-emerald-500 text-black'
                     }`}
             >
                 {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}

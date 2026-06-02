@@ -41,6 +41,7 @@ export default function App() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [isResumeDrawerOpen, setIsResumeDrawerOpen] = useState(false);
   const [isRecruiterConsoleOpen, setIsRecruiterConsoleOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [settings, setSettings] = useState<Record<string, string>>({
     profile_image: '/profile.png',
     resume_url: '/resume.pdf',
@@ -1053,6 +1054,8 @@ export default function App() {
 
       {/* AI Interview Assistant */}
       <AIChatAssistant
+        isOpen={isChatOpen}
+        onOpenChange={setIsChatOpen}
         portfolioData={{
           projects,
           experience,
@@ -1110,7 +1113,7 @@ export default function App() {
       </div>
 
       <MobileCtaBar
-        contactEmail={settings.contact_email}
+        onOpenChat={() => setIsChatOpen(true)}
         onOpenResume={() => setIsResumeDrawerOpen(true)}
         onOpenRecruiter={() => setIsRecruiterConsoleOpen(true)}
       />
