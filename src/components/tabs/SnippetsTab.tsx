@@ -1,4 +1,5 @@
 import type { Post } from '../../types';
+import { SNIPPET_SKELETON_COUNT } from '../../lib/constants';
 import { SnippetItem } from '../SnippetItem';
 import { SnippetSkeleton } from '../ProjectSkeleton';
 import { TabLoadingPanel } from '../ui/TabLoadingPanel';
@@ -26,8 +27,9 @@ export function SnippetsTab({
         showSlowConnectionWarning={showSlowConnectionWarning}
         skeleton={
           <>
-            <SnippetSkeleton />
-            <SnippetSkeleton />
+            {Array.from({ length: SNIPPET_SKELETON_COUNT }, (_, i) => (
+              <SnippetSkeleton key={i} />
+            ))}
           </>
         }
       />

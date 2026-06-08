@@ -1,4 +1,5 @@
 import type { Post } from '../../types';
+import { PROJECT_SKELETON_COUNT } from '../../lib/constants';
 import { ProjectCard } from '../ProjectCard';
 import { ProjectSkeleton } from '../ProjectSkeleton';
 import { TabLoadingPanel } from '../ui/TabLoadingPanel';
@@ -26,8 +27,9 @@ export function ProjectsTab({
         showSlowConnectionWarning={showSlowConnectionWarning}
         skeleton={
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ProjectSkeleton />
-            <ProjectSkeleton />
+            {Array.from({ length: PROJECT_SKELETON_COUNT }, (_, i) => (
+              <ProjectSkeleton key={i} />
+            ))}
           </div>
         }
       />
