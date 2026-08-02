@@ -37,10 +37,15 @@ export function SnippetsTab({
   }
 
   return (
-    <>
-      {snippets.map((snippet) => (
-        <SnippetItem key={snippet.id} snippet={snippet} onClick={() => onPostClick(snippet.id)} />
+    <div className="space-y-3">
+      {snippets.map((snippet, index) => (
+        <SnippetItem
+          key={snippet.id}
+          snippet={snippet}
+          index={index}
+          onClick={() => onPostClick(snippet.id)}
+        />
       ))}
-    </>
+    </div>
   );
 }

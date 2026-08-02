@@ -45,7 +45,7 @@ export default function App() {
   const [settings, setSettings] = useState<Record<string, string>>({
     profile_image: '/profile.png',
     resume_url: '/resume.pdf',
-    site_title: 'Wondwosen Endale Portifolio',
+    site_title: 'Wondwosen Endale Portfolio',
     hero_title: 'Architecting Digital Excellence',
     hero_subtitle: 'Full Stack Engineer & System Architect',
     contact_email: 'endalewondwosen@gmail.com'
@@ -152,26 +152,36 @@ export default function App() {
   useEffect(() => {
     if (activeTab !== 'home') return;
 
-    const options = {
-      root: null,
-      rootMargin: '-80px 0px -50% 0px',
-      threshold: 0
+    // Only nav scroll targets — do not include "certifications" (it stole Experience/Contact active state).
+    const sectionIds = ['about', 'skills', 'experience', 'contact'] as const;
+    const navOffset = 100;
+
+    const syncActiveFromScroll = () => {
+      let current: string = sectionIds[0];
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top - navOffset <= 0) {
+          current = id;
+        }
+      }
+
+      // Contact sits at the bottom and may never reach the top offset — force when near page end.
+      const doc = document.documentElement;
+      const nearBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 120;
+      if (nearBottom) current = 'contact';
+
+      setActiveSection((prev) => (prev === current ? prev : current));
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    }, options);
-
-    const sections = ['about', 'skills', 'experience', 'certifications', 'contact'];
-    sections.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
-    });
-    return () => observer.disconnect();
+    syncActiveFromScroll();
+    window.addEventListener('scroll', syncActiveFromScroll, { passive: true });
+    window.addEventListener('resize', syncActiveFromScroll);
+    return () => {
+      window.removeEventListener('scroll', syncActiveFromScroll);
+      window.removeEventListener('resize', syncActiveFromScroll);
+    };
   }, [activeTab]);
 
   const fetchData = async (retryCount = 0) => {
@@ -888,6 +898,7 @@ export default function App() {
         token={token}
         onLogout={handleLogout}
         onTabChange={setActiveTab}
+        onSectionChange={setActiveSection}
       />
 
       <NotificationToast notification={notification} />
@@ -1069,6 +1080,9 @@ export default function App() {
         project={selectedProject}
         isOpen={!!selectedProject}
         onClose={() => setSelectedProject(null)}
+        contactEmail={settings.contact_email}
+        onOpenResume={() => setIsResumeDrawerOpen(true)}
+        onNotify={(message, type = 'success') => setNotification({ message, type })}
       />
       {/* Snippet Deep Dive Modal */}
       <SnippetDeepDive
@@ -1094,6 +1108,7 @@ export default function App() {
         }}
         downloadUrl={apiUrl('/api/resume/download')}
         contactEmail={settings.contact_email || 'endalewondwosen@gmail.com'}
+        onNotify={(message, type = 'success') => setNotification({ message, type })}
       />
 
       {/* Floating Recruiter FAB — desktop only */}

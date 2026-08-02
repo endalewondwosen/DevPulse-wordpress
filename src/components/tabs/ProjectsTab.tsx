@@ -38,8 +38,13 @@ export function ProjectsTab({
 
   return (
     <>
-      {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} onClick={() => onPostClick(project.id)} />
+      {projects.map((project, index) => (
+        <ProjectCard
+          key={project.id}
+          project={project}
+          index={index}
+          onClick={() => onPostClick(project.id)}
+        />
       ))}
     </>
   );

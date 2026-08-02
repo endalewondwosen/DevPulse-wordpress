@@ -13,7 +13,6 @@ import {
 import { GITHUB_URL, LINKEDIN_URL } from '../../lib/constants';
 
 export type AppTab = 'home' | 'projects' | 'snippets' | 'admin';
-const SHOW_ADMIN_LOGIN = import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true';
 
 const NAV_ITEMS = [
   { name: 'About', id: 'about', type: 'scroll' as const },
@@ -33,6 +32,7 @@ interface SiteNavProps {
   token: string | null;
   onLogout: () => void;
   onTabChange: (tab: AppTab) => void;
+  onSectionChange?: (sectionId: string) => void;
 }
 
 export function SiteNav({
@@ -45,6 +45,7 @@ export function SiteNav({
   token,
   onLogout,
   onTabChange,
+  onSectionChange,
 }: SiteNavProps) {
   const isNavItemActive = (item: { id: string; type: string }) =>
     (item.type === 'tab' && activeTab === item.id) ||
@@ -78,6 +79,9 @@ export function SiteNav({
       return;
     }
 
+    // Optimistic active badge (don't wait for scroll spy).
+    onSectionChange?.(item.id);
+
     if (activeTab !== 'home') {
       onTabChange('home');
       setTimeout(() => scrollToSection(item.id), 100);
@@ -99,7 +103,7 @@ export function SiteNav({
           <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
             <Terminal className="w-5 h-5 text-black" />
           </div>
-          <span className="font-bold tracking-tight text-xl">Wondwosen Endale</span>
+          <span className="font-display font-bold tracking-tight text-xl">Wondwosen Endale</span>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
@@ -123,6 +127,9 @@ export function SiteNav({
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Public Admin nav hidden — keep portfolio clean for recruiters.
+              Uncomment to show Admin entry when VITE_SHOW_ADMIN_LOGIN=true,
+              or Dashboard after login.
           {(token || SHOW_ADMIN_LOGIN) && (
             <button
               onClick={() => {
@@ -135,6 +142,24 @@ export function SiteNav({
             >
               <Activity className="w-5 h-5" />
               {token ? 'Dashboard' : 'Admin'}
+            </button>
+          )}
+          */}
+
+          {/* Show Dashboard only after you're logged in (no public Admin link). */}
+          {token && (
+            <button
+              type="button"
+              onClick={() => {
+                onTabChange('admin');
+                setIsMenuOpen(false);
+              }}
+              className={`flex items-center gap-2 text-lg font-medium transition-colors ${
+                activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
+              }`}
+            >
+              <Activity className="w-5 h-5" />
+              Dashboard
             </button>
           )}
 

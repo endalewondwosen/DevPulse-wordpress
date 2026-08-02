@@ -1,6 +1,7 @@
 import { FormEvent } from 'react';
 import { Activity, Github, Linkedin, Mail, Phone, Send, Terminal } from 'lucide-react';
 import {
+  AVAILABILITY_SHORT,
   CONTACT_EMAIL,
   GITHUB_URL,
   GITHUB_HANDLE,
@@ -44,7 +45,7 @@ export function Contact({
             Let&apos;s talk about <br /> your project.
           </h2>
           <p className="text-black/70 text-lg mb-8 font-medium">
-            Open to full-time roles and senior engineering contracts. I usually reply within a day.
+            {AVAILABILITY_SHORT} I usually reply within a day.
           </p>
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">

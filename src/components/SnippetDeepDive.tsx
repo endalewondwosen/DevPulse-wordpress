@@ -89,10 +89,18 @@ export const SnippetDeepDive: React.FC<SnippetDeepDiveProps> = ({ snippet, isOpe
                   </button>
                 </div>
                 
-                <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-2xl blur opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                  <div className="relative p-6 bg-zinc-950 rounded-2xl border border-zinc-800 font-mono text-sm leading-relaxed overflow-x-auto">
-                    <pre className="text-emerald-400/90 whitespace-pre">
+                <div className="surface-shimmer group relative overflow-hidden rounded-2xl">
+                  <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/15 opacity-40 blur transition duration-500 group-hover:opacity-80" />
+                  <div className="relative overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 font-mono text-sm leading-relaxed">
+                    <div className="mb-4 flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/50" />
+                      <span className="ml-2 text-[10px] font-bold tracking-widest text-zinc-600 uppercase">
+                        {snippet.meta.language || 'code'}
+                      </span>
+                    </div>
+                    <pre className="whitespace-pre text-emerald-400/90">
                       <code>{snippet.meta.code || '// No code provided'}</code>
                     </pre>
                   </div>

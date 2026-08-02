@@ -1,3 +1,5 @@
+import { AVAILABILITY_SHORT } from '../../lib/constants';
+
 export function Currently() {
   return (
     <section aria-label="Currently" className="relative">
@@ -10,7 +12,7 @@ export function Currently() {
               Now
             </span>
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] md:mt-1">
-              May 2026
+              August 2026
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -19,7 +21,7 @@ export function Currently() {
                 Building
               </h4>
               <p className="text-sm text-zinc-100 font-semibold leading-snug">
-                Recruiter-friendly portfolio with interactive case studies and ATS-ready resume drawer.
+                Public-sector platforms in production — payments, city services, and multi-tenant workflows.
               </p>
             </div>
             <div>
@@ -35,7 +37,7 @@ export function Currently() {
                 Open to
               </h4>
               <p className="text-sm text-zinc-100 font-semibold leading-snug">
-                Senior Full-Stack roles, remote or hybrid. Available immediately.
+                {AVAILABILITY_SHORT}
               </p>
             </div>
           </div>

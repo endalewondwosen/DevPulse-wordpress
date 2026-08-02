@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Redefine zinc colors to be theme-aware */
@@ -38,8 +39,111 @@
   body {
     @apply bg-zinc-950 text-zinc-100 antialiased transition-colors duration-300;
   }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 .selection\:bg-emerald-500\/30 ::selection {
   background-color: rgba(16, 185, 129, 0.3);
+}
+
+@keyframes hero-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.hero-shimmer-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 211, 153, 0.15) 35%,
+    rgba(52, 211, 153, 0.7) 50%,
+    rgba(52, 211, 153, 0.15) 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: hero-shimmer 3.2s ease-in-out infinite;
+}
+
+@keyframes hero-ken {
+  0% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.hero-ken {
+  animation: hero-ken 12s ease-out forwards;
+}
+
+@keyframes surface-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.surface-shimmer::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(52, 211, 153, 0.08) 48%,
+    rgba(255, 255, 255, 0.06) 52%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+.group:hover .surface-shimmer::after,
+.surface-shimmer:hover::after {
+  opacity: 1;
+  animation: surface-shimmer 0.9s ease-out;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(39, 39, 42, 0.55) 0%,
+    rgba(63, 63, 70, 0.85) 45%,
+    rgba(39, 39, 42, 0.55) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-shimmer-line,
+  .hero-ken,
+  .skeleton-shimmer,
+  .surface-shimmer::after {
+    animation: none !important;
+  }
 }

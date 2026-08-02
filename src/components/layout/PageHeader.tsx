@@ -1,11 +1,22 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Terminal } from 'lucide-react';
 
 export type PageHeaderTab = 'projects' | 'snippets';
 
-const TAB_CONFIG: Record<PageHeaderTab, { title: string; placeholder: string }> = {
-  projects: { title: 'Projects', placeholder: 'Search projects…' },
-  snippets: { title: 'Code Lab', placeholder: 'Search snippets…' },
+const TAB_CONFIG: Record<
+  PageHeaderTab,
+  { title: string; subtitle: string; placeholder: string }
+> = {
+  projects: {
+    title: 'Projects',
+    subtitle: 'Case studies from production systems.',
+    placeholder: 'Search projects…',
+  },
+  snippets: {
+    title: 'Code Lab',
+    subtitle: 'Reusable patterns and implementation notes.',
+    placeholder: 'Search snippets…',
+  },
 };
 
 interface PageHeaderProps {
@@ -15,33 +26,36 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ tab, searchQuery, onSearchChange }: PageHeaderProps) {
-  const { title, placeholder } = TAB_CONFIG[tab];
+  const { title, subtitle, placeholder } = TAB_CONFIG[tab];
+  const reduceMotion = useReducedMotion();
 
   return (
     <header className="mb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <motion.h1
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <motion.div
           key={tab}
-          initial={{ opacity: 0, y: 8 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-100"
         >
-          {title}
-        </motion.h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-zinc-100 md:text-3xl">
+            {title}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
+        </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative w-full sm:w-72 shrink-0"
+          className="relative w-full shrink-0 sm:w-72"
         >
-          <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+          <Terminal className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           <input
             type="search"
             aria-label={placeholder}
             placeholder={placeholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-11 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 py-2.5 pr-4 pl-11 text-sm text-zinc-100 transition-colors placeholder:text-zinc-500 focus:border-emerald-500/50 focus:outline-none"
           />
         </motion.div>
       </div>
