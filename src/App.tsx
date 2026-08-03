@@ -18,6 +18,11 @@ import { LoginModal } from './components/layout/LoginModal';
 import { Footer } from './components/sections/Footer';
 
 import { Post, Experience, Skill, Message, Stat, Certification } from './types';
+import {
+  hasUsablePortfolioCache,
+  loadPortfolioCache,
+  savePortfolioCache,
+} from './lib/portfolioCache';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 const SHOW_ADMIN_LOGIN = import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true';
@@ -31,26 +36,40 @@ const apiFetch: typeof fetch = (input: any, init?: any) => {
   return fetch(input, init);
 };
 
+const INITIAL_SETTINGS: Record<string, string> = {
+  profile_image: '/profile.png',
+  resume_url: '/resume.pdf',
+  site_title: 'Wondwosen Endale Portfolio',
+  hero_title: 'Architecting Digital Excellence',
+  hero_subtitle: 'Full Stack Engineer & System Architect',
+  contact_email: 'endalewondwosen@gmail.com',
+};
+
+const INITIAL_CACHE = loadPortfolioCache();
+const HAS_INITIAL_CACHE = hasUsablePortfolioCache(INITIAL_CACHE);
+
 export default function App() {
-  const [projects, setProjects] = useState<Post[]>([]);
-  const [snippets, setSnippets] = useState<Post[]>([]);
-  const [experience, setExperience] = useState<Experience[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [projects, setProjects] = useState<Post[]>(() => INITIAL_CACHE?.projects ?? []);
+  const [snippets, setSnippets] = useState<Post[]>(() => INITIAL_CACHE?.snippets ?? []);
+  const [experience, setExperience] = useState<Experience[]>(
+    () => INITIAL_CACHE?.experience ?? []
+  );
+  const [skills, setSkills] = useState<Skill[]>(() => INITIAL_CACHE?.skills ?? []);
+  const [certifications, setCertifications] = useState<Certification[]>(
+    () => INITIAL_CACHE?.certifications ?? []
+  );
   const [messages, setMessages] = useState<Message[]>([]);
-  const [stats, setStats] = useState<Stat[]>([]);
+  const [stats, setStats] = useState<Stat[]>(() => INITIAL_CACHE?.stats ?? []);
   const [isResumeDrawerOpen, setIsResumeDrawerOpen] = useState(false);
   const [isRecruiterConsoleOpen, setIsRecruiterConsoleOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [settings, setSettings] = useState<Record<string, string>>({
-    profile_image: '/profile.png',
-    resume_url: '/resume.pdf',
-    site_title: 'Wondwosen Endale Portfolio',
-    hero_title: 'Architecting Digital Excellence',
-    hero_subtitle: 'Full Stack Engineer & System Architect',
-    contact_email: 'endalewondwosen@gmail.com'
-  });
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<Record<string, string>>(() => ({
+    ...INITIAL_SETTINGS,
+    ...(INITIAL_CACHE?.settings ?? {}),
+  }));
+  // Skeletons only when there is no cached portfolio to show immediately.
+  const [loading, setLoading] = useState(() => !HAS_INITIAL_CACHE);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isWakingUp, setIsWakingUp] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Connecting to database...');
   const [showSlowConnectionWarning, setShowSlowConnectionWarning] = useState(false);
@@ -185,20 +204,32 @@ export default function App() {
   }, [activeTab]);
 
   const fetchData = async (retryCount = 0) => {
+    const hasCache =
+      hasUsablePortfolioCache(loadPortfolioCache()) ||
+      projects.length > 0 ||
+      experience.length > 0;
+
     if (retryCount === 0) {
-      setLoading(true);
-      setLoadingMessage('Connecting to database...');
+      // With cache: keep UI populated and refresh quietly in the background.
+      if (hasCache) {
+        setLoading(false);
+        setIsRefreshing(true);
+        setLoadingMessage('Updating portfolio…');
+      } else {
+        setLoading(true);
+        setLoadingMessage('Connecting to database...');
+      }
       setShowSlowConnectionWarning(false);
     }
 
-    // Set up timeout for slow connections
+    // Only show cold-start messaging when there is nothing cached to display.
     const timeoutId = setTimeout(() => {
-      if (retryCount === 0) {
+      if (retryCount === 0 && !hasCache) {
         setIsWakingUp(true);
         setLoadingMessage('Almost there — preparing your experience...');
         setShowSlowConnectionWarning(true);
       }
-    }, 3000); // Show warning after 3 seconds
+    }, 3000);
 
     try {
       const headers: any = {};
@@ -208,7 +239,7 @@ export default function App() {
 
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
 
-      setLoadingMessage('Fetching portfolio data...');
+      if (!hasCache) setLoadingMessage('Fetching portfolio data...');
 
       const [projRes, snipRes, expRes, skillRes, certRes, statRes, settingsRes, msgRes] = await Promise.all([
         apiFetch(`/api/posts?type=project${searchParam}`, { headers }),
@@ -221,7 +252,7 @@ export default function App() {
         token ? apiFetch('/api/messages', { headers }) : Promise.resolve(null)
       ]);
 
-      setLoadingMessage('Processing data...');
+      if (!hasCache) setLoadingMessage('Processing data...');
 
       const [projData, snipData, expData, skillData, certData, statData, settingsData, msgData] = await Promise.all([
         processResponse(projRes),
@@ -243,6 +274,19 @@ export default function App() {
       setSettings((prev) => ({ ...prev, ...settingsData }));
       setMessages(msgData);
 
+      // Cache the full (unfiltered) portfolio for instant next visit.
+      if (!searchQuery) {
+        savePortfolioCache({
+          projects: projData,
+          snippets: snipData,
+          experience: expData,
+          skills: skillData,
+          certifications: certData,
+          stats: statData,
+          settings: { ...INITIAL_SETTINGS, ...settingsData },
+        });
+      }
+
       clearTimeout(timeoutId);
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -255,13 +299,14 @@ export default function App() {
         return;
       }
 
-      // Only show notification if it's not a background refresh
-      if (activeTab !== 'admin') {
+      // With cache, stay quiet — recruiters still see content. Without cache, surface the error.
+      if (activeTab !== 'admin' && !hasCache) {
         setNotification({ message: `Data sync error: ${error.message}`, type: 'error' });
       }
     } finally {
       if (retryCount === 0 || retryCount >= 2) {
         setLoading(false);
+        setIsRefreshing(false);
         setIsWakingUp(false);
         setShowSlowConnectionWarning(false);
       }
@@ -902,6 +947,14 @@ export default function App() {
       />
 
       <NotificationToast notification={notification} />
+
+      {isRefreshing && (
+        <div className="pointer-events-none fixed bottom-20 left-1/2 z-[90] -translate-x-1/2 md:bottom-8">
+          <div className="rounded-full border border-zinc-800 bg-zinc-950/90 px-4 py-2 text-[11px] font-semibold tracking-wide text-zinc-400 shadow-lg backdrop-blur-md">
+            Updating portfolio…
+          </div>
+        </div>
+      )}
 
       <LoginModal
         isOpen={showLogin}

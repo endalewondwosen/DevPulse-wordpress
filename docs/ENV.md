@@ -66,6 +66,35 @@ npm run dev
 
 ---
 
+## Cold starts (Render free + Neon free)
+
+Long first loads (30–60s) are usually the **API sleeping** on Render free tier (Neon can add a smaller wake delay).
+
+### App-side mitigation (already in code)
+
+The frontend caches the last successful portfolio payload in `localStorage` and shows it immediately on the next visit while refreshing in the background. First visit on a new device can still wait on a cold API.
+
+### Warm the API (recommended)
+
+Ping the health endpoint so Render is less likely to sleep:
+
+```
+https://YOUR-RENDER-HOST/api/health
+```
+
+Example with [UptimeRobot](https://uptimerobot.com/) (free):
+
+1. Add a **HTTP(s)** monitor  
+2. URL = `https://devpulse-wordpress.onrender.com/api/health` (your real host)  
+3. Interval = **5–10 minutes**  
+4. Expect HTTP **200** and JSON `{ "status": "ok", ... }`
+
+Alternatives: cron-job.org, EasyCron, or a GitHub Action on a schedule.
+
+Most reliable long-term: Render **always-on** / paid web service so the process never sleeps.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -76,6 +105,7 @@ npm run dev
 | Admin login fails | Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` on Render |
 | Gemini report fails | Set `GEMINI_API_KEY` on Render (not Vercel) |
 | “Failed to fetch” locally | Run `npm run dev`; ensure `DATABASE_URL` or SQLite fallback works |
+| Site feels empty for 30–60s | Warm API via health ping (above); cache helps on return visits |
 
 ### Render deploy exited with status 1
 
