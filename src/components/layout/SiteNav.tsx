@@ -92,18 +92,21 @@ export function SiteNav({
 
   return (
     <nav className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
         <div
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex min-w-0 items-center gap-2 cursor-pointer"
           onClick={() => {
             onTabChange('home');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         >
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-            <Terminal className="w-5 h-5 text-black" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
+            <Terminal className="h-5 w-5 text-black" />
           </div>
-          <span className="font-display font-bold tracking-tight text-xl">Wondwosen Endale</span>
+          <span className="font-display truncate text-base font-bold tracking-tight sm:text-xl">
+            <span className="sm:hidden">Wondwosen</span>
+            <span className="hidden sm:inline">Wondwosen Endale</span>
+          </span>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
@@ -126,7 +129,7 @@ export function SiteNav({
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           {/* Public Admin nav hidden — keep portfolio clean for recruiters.
               Uncomment to show Admin entry when VITE_SHOW_ADMIN_LOGIN=true,
               or Dashboard after login.
@@ -146,7 +149,7 @@ export function SiteNav({
           )}
           */}
 
-          {/* Show Dashboard only after you're logged in (no public Admin link). */}
+          {/* Dashboard after login — desktop only; mobile uses drawer */}
           {token && (
             <button
               type="button"
@@ -154,43 +157,44 @@ export function SiteNav({
                 onTabChange('admin');
                 setIsMenuOpen(false);
               }}
-              className={`flex items-center gap-2 text-lg font-medium transition-colors ${
+              className={`hidden items-center gap-2 text-sm font-medium transition-colors md:flex ${
                 activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
               }`}
             >
-              <Activity className="w-5 h-5" />
+              <Activity className="h-5 w-5" />
               Dashboard
             </button>
           )}
 
-          <div className="h-4 w-px bg-zinc-800 hidden md:block" />
+          <div className="hidden h-4 w-px bg-zinc-800 md:block" />
 
           <button
+            type="button"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
+            className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2 text-zinc-400 transition-colors hover:text-emerald-500"
             title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2 text-zinc-400 transition-colors hover:text-emerald-500"
               title="GitHub"
             >
-              <Github className="w-4 h-4" />
+              <Github className="h-4 w-4" />
             </a>
             <a
               href={LINKEDIN_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-emerald-500 transition-colors border border-zinc-800"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2 text-zinc-400 transition-colors hover:text-emerald-500"
               title="LinkedIn"
             >
-              <Linkedin className="w-4 h-4" />
+              <Linkedin className="h-4 w-4" />
             </a>
           </div>
 
@@ -251,7 +255,57 @@ export function SiteNav({
               >
                 Code Lab
               </button>
-              <div className="h-px bg-zinc-800 my-2" />
+              {token && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onTabChange('admin');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 text-left text-lg font-medium transition-all duration-200 cursor-pointer rounded-xl px-3 py-2 ${
+                    activeTab === 'admin'
+                      ? 'text-emerald-500 bg-emerald-500/10'
+                      : 'text-zinc-400 hover:text-emerald-500 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <Activity className="h-5 w-5" />
+                  Dashboard
+                </button>
+              )}
+              <div className="my-2 h-px bg-zinc-800" />
+              <div className="flex items-center gap-3 px-1">
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2.5 text-zinc-400"
+                  title="GitHub"
+                >
+                  <Github className="h-5 w-5" />
+                </a>
+                <a
+                  href={LINKEDIN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2.5 text-zinc-400"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="h-5 w-5" />
+                </a>
+                {token && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="ml-auto flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-zinc-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

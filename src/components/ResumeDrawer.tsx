@@ -14,7 +14,6 @@ export function ResumeDrawer({ isOpen, onClose, resumeUrl, downloadUrl }: Resume
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop Blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -23,49 +22,55 @@ export function ResumeDrawer({ isOpen, onClose, resumeUrl, downloadUrl }: Resume
             className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Slide-out Drawer */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 z-[200] w-full max-w-4xl bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 bottom-0 z-[200] flex w-full max-w-4xl flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-zinc-900/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-emerald-500" />
+            <div className="flex flex-col gap-3 border-b border-zinc-800 bg-zinc-900/50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                  <FileText className="h-5 w-5 text-emerald-500" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-zinc-100">Curriculum Vitae</h3>
-                  <p className="text-xs text-zinc-500">Wondwosen Endale — Full Stack Developer</p>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-zinc-100 sm:text-lg">Curriculum Vitae</h3>
+                  <p className="truncate text-xs text-zinc-500">
+                    Wondwosen Endale — Full Stack Developer
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <a
                   href={downloadUrl}
                   download
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/10 hover:scale-[1.02] active:scale-[0.98]"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-bold text-black shadow-lg shadow-emerald-500/10 transition-all hover:bg-emerald-400 sm:flex-none sm:px-4"
                 >
-                  <Download className="w-4 h-4" /> Download PDF
+                  <Download className="h-4 w-4" />
+                  <span className="sm:hidden">PDF</span>
+                  <span className="hidden sm:inline">Download PDF</span>
                 </a>
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="p-2 text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-zinc-800 rounded-xl transition-colors cursor-pointer"
+                  className="cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900 p-2 text-zinc-400 transition-colors hover:text-zinc-100"
+                  aria-label="Close resume"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Resume Content / PDF Viewer */}
-            <div className="flex-1 bg-zinc-900 p-4 overflow-hidden relative">
+            <div className="relative min-h-0 flex-1 overflow-hidden bg-zinc-900 p-3 sm:p-4">
               <iframe
                 src={`${resumeUrl}#toolbar=0`}
-                className="w-full h-full rounded-2xl border border-zinc-800 bg-white"
+                className="h-full w-full rounded-2xl border border-zinc-800 bg-white"
                 title="Wondwosen Endale Resume"
               />
+              <p className="mt-2 text-center text-[10px] text-zinc-500 sm:hidden">
+                If the preview looks blank, use Download PDF.
+              </p>
             </div>
           </motion.div>
         </>

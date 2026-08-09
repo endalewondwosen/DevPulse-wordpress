@@ -35,7 +35,7 @@ export const FEATURED_PROJECTS: FeaturedProject[] = [
       'Revenue-bearing platform for 450+ government users across 12 subcities — TeleBirr integration, automated late-fee calculation, public REST API.',
     stack: ['Laravel', 'Next.js', 'MySQL', 'TeleBirr'],
     metrics: [
-      { value: 'ETB 500M+', label: 'Revenue' },
+      { value: '500M+', label: 'ETB Revenue' },
       { value: '400K+', label: 'Charges' },
       { value: '12', label: 'Subcities' },
     ],

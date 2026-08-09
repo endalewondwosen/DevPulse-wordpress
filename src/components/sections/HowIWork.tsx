@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { Activity, Code2, Layers, Send } from 'lucide-react';
+import { revealViewport } from '../../lib/motion';
 
 const STAGES = [
   {
@@ -51,7 +52,7 @@ export function HowIWork() {
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
+        viewport={revealViewport}
         transition={{ duration: 0.4 }}
         className="flex items-end justify-between gap-4"
       >
@@ -71,7 +72,7 @@ export function HowIWork() {
             key={stage.step}
             initial={reduceMotion ? false : { opacity: 0, x: -28 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
+            viewport={revealViewport}
             transition={{
               duration: 0.55,
               delay: index * 0.14,
@@ -99,7 +100,7 @@ export function HowIWork() {
             key={p.title}
             initial={reduceMotion ? false : { opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
+            viewport={revealViewport}
             transition={{
               duration: 0.5,
               delay: 0.15 + index * 0.12,

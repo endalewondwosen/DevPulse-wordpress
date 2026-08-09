@@ -37,53 +37,67 @@ export function Contact({
   return (
     <section
       id="contact"
-      className="bg-emerald-500 rounded-[2rem] p-8 md:p-12 text-black relative overflow-hidden"
+      className="relative mb-8 overflow-hidden rounded-[2rem] bg-emerald-500 p-6 text-black sm:p-8 md:mb-0 md:p-12"
     >
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="relative z-10 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
         <div>
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">
+          <h2 className="mb-6 text-3xl font-bold tracking-tighter sm:text-4xl md:text-6xl">
             Let&apos;s talk about <br /> your project.
           </h2>
-          <p className="text-black/70 text-lg mb-8 font-medium">
+          <p className="mb-8 text-base font-medium text-black/70 sm:text-lg">
             {AVAILABILITY_SHORT} I usually reply within a day.
           </p>
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                <Mail className="w-6 h-6" />
+          <div className="flex flex-col gap-5 sm:gap-6">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/10 sm:h-12 sm:w-12">
+                <Mail className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-50">Email Me</p>
-                <a href={`mailto:${email}`} className="font-bold hover:underline">{email}</a>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-50">Call Me</p>
-                <a href={`tel:${PHONE_NUMBER}`} className="font-bold hover:underline">{PHONE_DISPLAY}</a>
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-widest uppercase opacity-50">Email Me</p>
+                <a href={`mailto:${email}`} className="break-all font-bold hover:underline">
+                  {email}
+                </a>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                <Linkedin className="w-6 h-6" />
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/10 sm:h-12 sm:w-12">
+                <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-50">LinkedIn</p>
-                <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-widest uppercase opacity-50">Call Me</p>
+                <a href={`tel:${PHONE_NUMBER}`} className="font-bold hover:underline">
+                  {PHONE_DISPLAY}
+                </a>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/10 sm:h-12 sm:w-12">
+                <Linkedin className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-widest uppercase opacity-50">LinkedIn</p>
+                <a
+                  href={LINKEDIN_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all font-bold hover:underline"
+                >
                   {LINKEDIN_HANDLE}
                 </a>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/10 rounded-2xl flex items-center justify-center">
-                <Github className="w-6 h-6" />
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/10 sm:h-12 sm:w-12">
+                <Github className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-50">GitHub</p>
-                <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="font-bold hover:underline">
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-widest uppercase opacity-50">GitHub</p>
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all font-bold hover:underline"
+                >
                   {GITHUB_HANDLE}
                 </a>
               </div>
@@ -91,7 +105,7 @@ export function Contact({
           </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+        <div className="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-md sm:p-8">
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">

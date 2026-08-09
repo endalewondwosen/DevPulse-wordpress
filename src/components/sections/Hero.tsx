@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { ChevronRight, FileText, User } from 'lucide-react';
 import { AVAILABILITY_LINE, EXPERIENCE_YEARS } from '../../lib/constants';
+import { revealViewport } from '../../lib/motion';
 
 interface HeroProps {
   settings: Record<string, string>;
@@ -41,7 +42,7 @@ export function Hero({ settings, loading, onExploreProjects, onOpenResume }: Her
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
-            className="mb-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400/90"
+            className="mb-5 text-[10px] font-semibold tracking-[0.12em] text-emerald-400/90 uppercase sm:text-[11px] sm:tracking-[0.18em]"
           >
             {AVAILABILITY_LINE}
           </motion.p>
@@ -50,7 +51,7 @@ export function Hero({ settings, loading, onExploreProjects, onOpenResume }: Her
             initial={reduceMotion ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.05 }}
-            className="font-display mb-5 text-5xl font-extrabold leading-[0.98] tracking-tight text-zinc-100 sm:text-6xl md:text-7xl"
+            className="font-display mb-5 text-4xl font-extrabold leading-[0.98] tracking-tight text-zinc-100 sm:text-6xl md:text-7xl"
           >
             Wondwosen
             <br />
@@ -115,10 +116,10 @@ export function Hero({ settings, loading, onExploreProjects, onOpenResume }: Her
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.12 }}
-            className="relative mx-auto w-full max-w-md lg:max-w-none"
+            className="relative mx-auto w-full max-w-xs sm:max-w-md lg:max-w-none"
           >
             <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-emerald-500/15 via-transparent to-teal-500/10 blur-2xl" />
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900">
+            <div className="relative aspect-[4/5] max-h-[52vh] overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900 sm:max-h-none">
               {loading ? (
                 <div className="flex h-full w-full items-center justify-center bg-zinc-800/80">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-700/80">
@@ -157,20 +158,20 @@ export function Hero({ settings, loading, onExploreProjects, onOpenResume }: Her
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.4 }}
+        viewport={revealViewport}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="mt-14 grid grid-cols-3 gap-4 border-y border-zinc-800/80 py-7 md:mt-16 md:gap-8 md:py-8"
+        className="mt-10 grid grid-cols-3 gap-2 border-y border-zinc-800/80 py-6 sm:gap-4 md:mt-16 md:gap-8 md:py-8"
       >
         {STATS.map((s) => (
-          <div key={s.label}>
+          <div key={s.label} className="min-w-0">
             <span
-              className={`font-display block text-2xl font-extrabold tracking-tight md:text-4xl ${
+              className={`font-display block text-xl font-extrabold tracking-tight sm:text-2xl md:text-4xl ${
                 s.accent ? 'text-emerald-400' : 'text-zinc-100'
               }`}
             >
               {s.value}
             </span>
-            <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+            <span className="mt-1 block text-[9px] leading-snug font-bold tracking-wide text-zinc-500 uppercase sm:text-[10px] sm:tracking-[0.14em]">
               {s.label}
             </span>
           </div>

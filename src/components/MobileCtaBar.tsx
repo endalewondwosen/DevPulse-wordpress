@@ -8,36 +8,39 @@ interface MobileCtaBarProps {
 
 export function MobileCtaBar({ onOpenChat, onOpenResume, onOpenRecruiter }: MobileCtaBarProps) {
   return (
-    <div className="md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none">
-      <div className="pointer-events-auto mx-3 mb-3 p-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-2xl shadow-2xl grid grid-cols-3 gap-2">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] md:hidden pb-[env(safe-area-inset-bottom)]">
+      <div className="pointer-events-auto mx-3 mb-3 grid grid-cols-3 gap-2 rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur-md">
         <button
           type="button"
           onClick={onOpenChat}
-          className="relative flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
+          className="relative flex flex-col items-center justify-center gap-0.5 rounded-xl bg-zinc-900/60 py-2.5 text-zinc-100 transition-colors active:bg-zinc-800"
           aria-label="Open AI assistant"
         >
           <span className="relative">
-            <MessageSquare className="w-4 h-4 text-emerald-400" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-zinc-950" aria-hidden />
+            <MessageSquare className="h-4 w-4 text-emerald-400" />
+            <span
+              className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-zinc-950 bg-red-500"
+              aria-hidden
+            />
           </span>
           <span className="text-[10px] font-bold tracking-wide">Ask AI</span>
         </button>
         <button
           type="button"
           onClick={onOpenResume}
-          className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-zinc-900/60 active:bg-zinc-800 text-zinc-100 transition-colors"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-zinc-900/60 py-2.5 text-zinc-100 transition-colors active:bg-zinc-800"
           aria-label="Resume"
         >
-          <FileText className="w-4 h-4 text-emerald-400" />
+          <FileText className="h-4 w-4 text-emerald-400" />
           <span className="text-[10px] font-bold tracking-wide">Resume</span>
         </button>
         <button
           type="button"
           onClick={onOpenRecruiter}
-          className="flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-emerald-500 active:bg-emerald-400 text-black transition-colors"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-emerald-500 py-2.5 text-black transition-colors active:bg-emerald-400"
           aria-label="Open recruiter console"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="h-4 w-4" />
           <span className="text-[10px] font-extrabold tracking-wide">Hire me</span>
         </button>
       </div>

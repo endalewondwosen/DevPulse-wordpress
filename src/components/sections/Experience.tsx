@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
+import { revealViewport } from '../../lib/motion';
 import type { Experience as ExperienceType } from '../../types';
 
 interface ExperienceProps {
@@ -90,7 +91,7 @@ export function Experience({ experience }: ExperienceProps) {
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
+        viewport={revealViewport}
         transition={{ duration: 0.4 }}
         className="flex items-center gap-4"
       >
@@ -110,7 +111,7 @@ export function Experience({ experience }: ExperienceProps) {
                 key={exp.id}
                 initial={reduceMotion ? false : { opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
+                viewport={revealViewport}
                 transition={{ duration: 0.45, delay: Math.min(cardIndex, 4) * 0.06 }}
                 className="group relative border-l-2 border-zinc-800/80 pb-8 pl-10 last:pb-0"
               >
@@ -133,7 +134,7 @@ export function Experience({ experience }: ExperienceProps) {
                         <motion.p
                           initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                           whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, amount: 0.6 }}
+                          viewport={revealViewport}
                           transition={{ duration: 0.35, delay: 0.05 }}
                           className="text-sm leading-relaxed text-zinc-400"
                         >
@@ -152,7 +153,7 @@ export function Experience({ experience }: ExperienceProps) {
                                 key={item}
                                 initial={reduceMotion ? false : { opacity: 0, x: -10 }}
                                 whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true, amount: 0.5 }}
+                                viewport={revealViewport}
                                 transition={{ duration: 0.3, delay: 0.08 + i * 0.05 }}
                                 className="flex items-start gap-2 text-sm leading-relaxed text-zinc-400"
                               >
@@ -175,7 +176,7 @@ export function Experience({ experience }: ExperienceProps) {
                                 key={`${project.name}-${project.description}`}
                                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, amount: 0.4 }}
+                                viewport={revealViewport}
                                 transition={{ duration: 0.35, delay: 0.1 + i * 0.06 }}
                                 className="rounded-xl border border-zinc-800/70 bg-zinc-900/50 p-3"
                               >
@@ -208,7 +209,7 @@ export function Experience({ experience }: ExperienceProps) {
                     <motion.div
                       initial={reduceMotion ? false : { opacity: 0 }}
                       whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
+                      viewport={revealViewport}
                       transition={{ duration: 0.35, delay: 0.15 }}
                       className="flex flex-wrap gap-1.5 pt-2"
                     >

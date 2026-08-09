@@ -87,9 +87,9 @@ export function RecruiterConsole({
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="pointer-events-auto flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2.5rem] border border-zinc-800 bg-zinc-950/95 shadow-2xl"
+              className="pointer-events-auto flex max-h-[min(92dvh,90vh)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/95 shadow-2xl sm:rounded-[2.5rem]"
             >
-              <div className="relative flex items-start justify-between border-b border-zinc-800 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 p-8">
+              <div className="relative flex items-start justify-between border-b border-zinc-800 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 p-5 sm:p-8">
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-[10px] font-bold tracking-wider text-emerald-400 uppercase">
                     <Sparkles className="h-3 w-3" /> Recruiter Quick-View
@@ -111,7 +111,7 @@ export function RecruiterConsole({
                 </button>
               </div>
 
-              <div className="space-y-8 overflow-y-auto p-8">
+              <div className="min-h-0 space-y-6 overflow-y-auto p-5 sm:space-y-8 sm:p-8">
                 {/* Primary conversion strip */}
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button

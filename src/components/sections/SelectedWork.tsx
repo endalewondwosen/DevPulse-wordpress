@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { ChevronRight, Layers } from 'lucide-react';
 import { FEATURED_PROJECTS, resolveFeaturedProject } from '../../lib/featuredProjects';
+import { revealViewport } from '../../lib/motion';
 import type { Post } from '../../types';
 
 interface SelectedWorkProps {
@@ -45,7 +46,7 @@ export function SelectedWork({ projects, onSeeAllProjects, onOpenProject }: Sele
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.4 }}
+        viewport={revealViewport}
         transition={{ duration: 0.45 }}
         className="flex items-end justify-between gap-4"
       >
@@ -83,7 +84,7 @@ export function SelectedWork({ projects, onSeeAllProjects, onOpenProject }: Sele
               onClick={() => handleFeaturedClick(index)}
               initial={reduceMotion ? false : { opacity: 0, y: 22 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
+              viewport={revealViewport}
               transition={{ duration: 0.45, delay: index * 0.08 }}
               whileHover={reduceMotion ? undefined : { y: -4 }}
               whileTap={reduceMotion ? undefined : { scale: 0.99 }}
@@ -116,13 +117,13 @@ export function SelectedWork({ projects, onSeeAllProjects, onOpenProject }: Sele
               <div className="flex flex-col gap-4 p-5 md:p-6">
                 <h3 className="text-lg leading-snug font-bold text-zinc-100 md:text-xl">{proj.title}</h3>
                 <p className="text-sm leading-relaxed text-zinc-400">{proj.summary}</p>
-                <div className="grid grid-cols-3 gap-3 border-t border-zinc-800/80 pt-4">
+                <div className="grid grid-cols-3 gap-2 border-t border-zinc-800/80 pt-4 sm:gap-3">
                   {proj.metrics.map((m) => (
-                    <div key={m.label}>
-                      <span className="font-display block text-base leading-tight font-extrabold text-zinc-100 md:text-lg">
+                    <div key={m.label} className="min-w-0">
+                      <span className="font-display block text-sm leading-tight font-extrabold break-words text-zinc-100 sm:text-base md:text-lg">
                         {m.value}
                       </span>
-                      <span className="mt-0.5 block text-[9px] font-bold tracking-widest text-zinc-500 uppercase">
+                      <span className="mt-0.5 block text-[8px] leading-snug font-bold tracking-wide text-zinc-500 uppercase sm:text-[9px] sm:tracking-widest">
                         {m.label}
                       </span>
                     </div>

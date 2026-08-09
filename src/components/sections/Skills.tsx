@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { Cpu, Layout, Sparkles, Terminal } from 'lucide-react';
+import { revealViewport } from '../../lib/motion';
 import type { Skill } from '../../types';
 
 interface SkillsProps {
@@ -53,7 +54,7 @@ export function Skills({ skills }: SkillsProps) {
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
+        viewport={revealViewport}
         transition={{ duration: 0.4 }}
         className="flex items-end justify-between gap-4"
       >
@@ -76,7 +77,7 @@ export function Skills({ skills }: SkillsProps) {
               key={cat.id}
               initial={reduceMotion ? false : { opacity: 0, x: -28 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
+              viewport={revealViewport}
               transition={{
                 duration: 0.55,
                 delay: index * 0.14,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Terminal, ChevronRight } from 'lucide-react';
+import { revealViewport } from '../lib/motion';
 import { Post } from '../types';
 
 function previewLines(code?: string): string {
@@ -26,7 +27,7 @@ export const SnippetItem: React.FC<{
       layoutId={`snippet-${snippet.id}`}
       initial={reduceMotion ? false : { opacity: 0, x: -12 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
+      viewport={revealViewport}
       transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.04 }}
       whileHover={reduceMotion ? undefined : { x: 4 }}
       onClick={onClick}

@@ -949,7 +949,7 @@ export default function App() {
       <NotificationToast notification={notification} />
 
       {isRefreshing && (
-        <div className="pointer-events-none fixed bottom-20 left-1/2 z-[90] -translate-x-1/2 md:bottom-8">
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-[90] max-w-[calc(100vw-2rem)] -translate-x-1/2 md:bottom-8">
           <div className="rounded-full border border-zinc-800 bg-zinc-950/90 px-4 py-2 text-[11px] font-semibold tracking-wide text-zinc-400 shadow-lg backdrop-blur-md">
             Updating portfolio…
           </div>
@@ -965,8 +965,10 @@ export default function App() {
       />
 
       <main
-        className={`max-w-6xl mx-auto px-6 ${
-          activeTab === 'home' ? 'pt-4 pb-12 md:pt-6 md:pb-12' : 'py-12'
+        className={`mx-auto max-w-6xl px-4 sm:px-6 ${
+          activeTab === 'home'
+            ? 'pt-4 pb-28 md:pt-6 md:pb-12'
+            : 'pt-8 pb-28 md:py-12'
         }`}
       >
         {(activeTab === 'projects' || activeTab === 'snippets') && (

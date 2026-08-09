@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { ExternalLink, Code2, Lock, Github, ChevronRight } from 'lucide-react';
+import { revealViewport } from '../lib/motion';
 import { Post } from '../types';
 
 export const ProjectCard: React.FC<{
@@ -15,7 +16,7 @@ export const ProjectCard: React.FC<{
       layoutId={`project-${project.id}`}
       initial={reduceMotion ? false : { opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={revealViewport}
       transition={{ duration: 0.4, delay: Math.min(index, 6) * 0.05 }}
       whileHover={reduceMotion ? undefined : { y: -6 }}
       onClick={onClick}

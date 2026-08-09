@@ -95,7 +95,7 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 md:p-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -108,9 +108,9 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2.5rem] border border-zinc-800 bg-zinc-900 shadow-2xl"
+            className="relative flex max-h-[min(92dvh,90vh)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl sm:rounded-[2.5rem]"
           >
-            <div className="relative h-52 shrink-0 md:h-72">
+            <div className="relative h-40 shrink-0 sm:h-52 md:h-72">
               {project.image_url ? (
                 <button
                   type="button"
@@ -148,7 +148,7 @@ export const ProjectDeepDive: React.FC<ProjectDeepDiveProps> = ({
               </button>
             </div>
 
-            <div className="scrollbar-hide flex-1 space-y-12 overflow-y-auto p-8 md:p-12">
+            <div className="scrollbar-hide min-h-0 flex-1 space-y-8 overflow-y-auto p-5 sm:space-y-12 sm:p-8 md:p-12">
               <div className="space-y-4 border-b border-zinc-800/80 pb-2">
                 <h2 className="font-display text-3xl font-black leading-tight text-zinc-100 md:text-4xl">
                   {project.title}
