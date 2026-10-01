@@ -31,6 +31,7 @@ interface SiteNavProps {
   setTheme: (theme: 'light' | 'dark') => void;
   token: string | null;
   onLogout: () => void;
+  onLogin: () => void;
   onTabChange: (tab: AppTab) => void;
   onSectionChange?: (sectionId: string) => void;
 }
@@ -44,6 +45,7 @@ export function SiteNav({
   setTheme,
   token,
   onLogout,
+  onLogin,
   onTabChange,
   onSectionChange,
 }: SiteNavProps) {
@@ -133,7 +135,8 @@ export function SiteNav({
           {/* Public Admin nav hidden — keep portfolio clean for recruiters.
               Uncomment to show Admin entry when VITE_SHOW_ADMIN_LOGIN=true,
               or Dashboard after login.
-          {(token || SHOW_ADMIN_LOGIN) && (
+          */}
+          {(token || import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true') && (
             <button
               onClick={() => {
                 onTabChange('admin');
@@ -147,7 +150,6 @@ export function SiteNav({
               {token ? 'Dashboard' : 'Admin'}
             </button>
           )}
-          */}
 
           {/* Dashboard after login — desktop only; mobile uses drawer */}
           {token && (
@@ -207,7 +209,16 @@ export function SiteNav({
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onClick={onLogin}
+              className={`hidden md:flex items-center gap-2 ${navLinkClass(false)}`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Login</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -270,6 +281,21 @@ export function SiteNav({
                 >
                   <Activity className="h-5 w-5" />
                   Dashboard
+                </button>
+              )}
+              {!token && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLogin();
+                    setIsMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 text-left text-lg font-medium transition-all duration-200 cursor-pointer rounded-xl px-3 py-2 ${
+                    'text-zinc-400 hover:text-emerald-500 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <Activity className="h-5 w-5" />
+                  Login
                 </button>
               )}
               <div className="my-2 h-px bg-zinc-800" />

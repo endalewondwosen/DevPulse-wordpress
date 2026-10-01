@@ -942,6 +942,7 @@ export default function App() {
         setTheme={setTheme}
         token={token}
         onLogout={handleLogout}
+        onLogin={() => setShowLogin(true)}
         onTabChange={setActiveTab}
         onSectionChange={setActiveSection}
       />
