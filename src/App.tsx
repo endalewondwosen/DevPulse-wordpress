@@ -153,6 +153,13 @@ export default function App() {
   }, [notification]);
 
   useEffect(() => {
+    if (!SHOW_ADMIN_LOGIN && activeTab === 'admin' && !token) {
+      setActiveTab('home');
+      setShowLogin(false);
+    }
+  }, [activeTab, token]);
+
+  useEffect(() => {
     localStorage.setItem('devpulse_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -942,7 +949,10 @@ export default function App() {
         setTheme={setTheme}
         token={token}
         onLogout={handleLogout}
-        onLogin={() => setShowLogin(true)}
+        showAdminLogin={SHOW_ADMIN_LOGIN}
+        onLogin={() => {
+          if (SHOW_ADMIN_LOGIN) setShowLogin(true);
+        }}
         onTabChange={setActiveTab}
         onSectionChange={setActiveSection}
       />
@@ -957,13 +967,15 @@ export default function App() {
         </div>
       )}
 
-      <LoginModal
-        isOpen={showLogin}
-        loginData={loginData}
-        setLoginData={setLoginData}
-        onSubmit={handleLogin}
-        onClose={() => setShowLogin(false)}
-      />
+      {SHOW_ADMIN_LOGIN && (
+        <LoginModal
+          isOpen={showLogin}
+          loginData={loginData}
+          setLoginData={setLoginData}
+          onSubmit={handleLogin}
+          onClose={() => setShowLogin(false)}
+        />
+      )}
 
       <main
         className={`mx-auto max-w-6xl px-4 sm:px-6 ${
@@ -1047,7 +1059,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === 'admin' && (
+          {activeTab === 'admin' && (SHOW_ADMIN_LOGIN || token) && (
             <motion.div
               key="admin"
               initial={{ opacity: 0 }}

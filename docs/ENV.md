@@ -16,7 +16,7 @@ Set in **Project → Settings → Environment Variables** (Production + Preview)
 | Variable | Production value | Notes |
 |----------|------------------|--------|
 | `VITE_API_URL` | `https://devpulse-wordpress.onrender.com` | Host only — no `/api` suffix (paths already use `/api/...`) |
-| `VITE_SHOW_ADMIN_LOGIN` | `false` | Hides public admin entry; log in via direct flow if needed |
+| `VITE_SHOW_ADMIN_LOGIN` | `false` | Hides **Login** in nav, login modal, and admin tab for visitors. Set `true` temporarily when you need to sign in again, redeploy, then set back to `false`. If you still have a session (`devpulse_token`), **Dashboard** stays available until you log out. |
 | `VITE_GEMINI_API_KEY` | *(optional)* | Only for the floating recruiter chat; key is visible in the browser |
 
 Do **not** put `DATABASE_URL`, `JWT_SECRET`, or `ADMIN_PASSWORD` on Vercel.

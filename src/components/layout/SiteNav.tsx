@@ -30,6 +30,8 @@ interface SiteNavProps {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   token: string | null;
+  /** When false (production), hide Login / public admin entry — see VITE_SHOW_ADMIN_LOGIN */
+  showAdminLogin: boolean;
   onLogout: () => void;
   onLogin: () => void;
   onTabChange: (tab: AppTab) => void;
@@ -44,6 +46,7 @@ export function SiteNav({
   theme,
   setTheme,
   token,
+  showAdminLogin,
   onLogout,
   onLogin,
   onTabChange,
@@ -132,26 +135,6 @@ export function SiteNav({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-          {/* Public Admin nav hidden — keep portfolio clean for recruiters.
-              Uncomment to show Admin entry when VITE_SHOW_ADMIN_LOGIN=true,
-              or Dashboard after login.
-          */}
-          {(token || import.meta.env.VITE_SHOW_ADMIN_LOGIN === 'true') && (
-            <button
-              onClick={() => {
-                onTabChange('admin');
-                setIsMenuOpen(false);
-              }}
-              className={`flex items-center gap-2 text-lg font-medium transition-colors ${
-                activeTab === 'admin' ? 'text-emerald-500' : 'text-zinc-400 hover:text-zinc-100'
-              }`}
-            >
-              <Activity className="w-5 h-5" />
-              {token ? 'Dashboard' : 'Admin'}
-            </button>
-          )}
-
-          {/* Dashboard after login — desktop only; mobile uses drawer */}
           {token && (
             <button
               type="button"
@@ -209,7 +192,7 @@ export function SiteNav({
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
             </button>
-          ) : (
+          ) : showAdminLogin ? (
             <button
               type="button"
               onClick={onLogin}
@@ -218,7 +201,7 @@ export function SiteNav({
               <Activity className="w-4 h-4" />
               <span>Login</span>
             </button>
-          )}
+          ) : null}
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -283,16 +266,14 @@ export function SiteNav({
                   Dashboard
                 </button>
               )}
-              {!token && (
+              {!token && showAdminLogin && (
                 <button
                   type="button"
                   onClick={() => {
                     onLogin();
                     setIsMenuOpen(false);
                   }}
-                  className={`flex items-center gap-2 text-left text-lg font-medium transition-all duration-200 cursor-pointer rounded-xl px-3 py-2 ${
-                    'text-zinc-400 hover:text-emerald-500 hover:bg-zinc-800/50'
-                  }`}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-lg font-medium text-zinc-400 transition-all duration-200 hover:bg-zinc-800/50 hover:text-emerald-500"
                 >
                   <Activity className="h-5 w-5" />
                   Login
