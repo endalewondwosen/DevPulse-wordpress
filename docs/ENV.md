@@ -25,6 +25,8 @@ Do **not** put `DATABASE_URL`, `JWT_SECRET`, or `ADMIN_PASSWORD` on Vercel.
 
 ## Render (API)
 
+**Do not set `VITE_*` variables on Render.** Names starting with `VITE_` are read only when Vercel (or local `npm run build`) builds the React app. Render redeploys do not change Login visibility on your live site.
+
 | Variable | Required | Notes |
 |----------|----------|--------|
 | `NODE_ENV` | Yes | `production` |
